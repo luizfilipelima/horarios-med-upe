@@ -1,25 +1,69 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Copy } from 'lucide-react';
-import type { ClassItem } from '../data/schedule';
+import { Plus, BookOpen, FlaskConical, Wifi, Stethoscope } from 'lucide-react';
+import type { ClassItem, ClassType } from '../data/schedule';
+import type { DaySchedule } from '../data/schedule';
+
+const typeConfig: Record<ClassType, { label: string; bg: string; border: string; icon: React.ReactNode }> = {
+  teoria: {
+    label: 'Teoria',
+    bg: 'bg-sky-50 dark:bg-sky-500/10',
+    border: 'border-sky-200 dark:border-sky-500/20',
+    icon: <BookOpen size={16} strokeWidth={2.5} />,
+  },
+  simulacion: {
+    label: 'Simulación',
+    bg: 'bg-violet-50 dark:bg-violet-500/10',
+    border: 'border-violet-200 dark:border-violet-500/20',
+    icon: <FlaskConical size={16} strokeWidth={2.5} />,
+  },
+  virtual: {
+    label: 'Virtual',
+    bg: 'bg-emerald-50 dark:bg-emerald-500/10',
+    border: 'border-emerald-200 dark:border-emerald-500/20',
+    icon: <Wifi size={16} strokeWidth={2.5} />,
+  },
+  practica: {
+    label: 'Prática',
+    bg: 'bg-amber-50 dark:bg-amber-500/10',
+    border: 'border-amber-200 dark:border-amber-500/20',
+    icon: <Stethoscope size={16} strokeWidth={2.5} />,
+  },
+};
+
+const TIPOS: ClassType[] = ['teoria', 'simulacion', 'virtual', 'practica'];
 
 interface AddClassModalProps {
   isOpen: boolean;
   onClose: () => void;
-  classes: ClassItem[];
+  schedule: DaySchedule[];
   onAddEmpty: () => void;
   onCopyFrom: (item: ClassItem) => void;
 }
 
-export function AddClassModal({ isOpen, onClose, classes, onAddEmpty, onCopyFrom }: AddClassModalProps) {
+function getTemplateByType(schedule: DaySchedule[], tipo: ClassType): ClassItem | null {
+  for (const day of schedule) {
+    const found = day.classes.find((c) => c.type === tipo);
+    if (found) return found;
+  }
+  return null;
+}
+
+export function AddClassModal({ isOpen, onClose, schedule, onAddEmpty, onCopyFrom }: AddClassModalProps) {
   const handleAddEmpty = () => {
     onAddEmpty();
     onClose();
   };
 
-  const handleCopy = (item: ClassItem) => {
+  const handleTemplate = (item: ClassItem) => {
     onCopyFrom(item);
     onClose();
   };
+
+  const templates = TIPOS.map((tipo) => {
+    const template = getTemplateByType(schedule, tipo);
+    const config = typeConfig[tipo];
+    return { tipo, template, config };
+  });
 
   return (
     <AnimatePresence>
@@ -47,7 +91,7 @@ export function AddClassModal({ isOpen, onClose, classes, onAddEmpty, onCopyFrom
                   Adicionar Nueva Materia
                 </h3>
               </div>
-              <div className="p-4 space-y-2">
+              <div className="p-4 space-y-3">
                 <button
                   type="button"
                   onClick={handleAddEmpty}
@@ -57,33 +101,39 @@ export function AddClassModal({ isOpen, onClose, classes, onAddEmpty, onCopyFrom
                   <span className="font-medium text-left">Nova matéria em branco</span>
                 </button>
 
-                {classes.length > 0 && (
-                  <div className="pt-2">
-                    <p className="text-xs font-semibold text-gray-500 dark:text-zinc-500 uppercase tracking-wider mb-2 px-1">
-                      Ou copiar de matéria existente
-                    </p>
-                    <div className="space-y-1 max-h-48 overflow-y-auto">
-                      {classes.map((cls, i) => (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 dark:text-zinc-500 uppercase tracking-wider mb-2 px-1">
+                    Ou usar template por tipo
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {templates.map(({ tipo, template, config }) => {
+                      if (!template) return null;
+                      return (
                         <button
-                          key={`${cls.subject}-${cls.time}-${i}`}
+                          key={tipo}
                           type="button"
-                          onClick={() => handleCopy(cls)}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-500/10 text-left transition-colors"
+                          onClick={() => handleTemplate(template)}
+                          className={`flex flex-col gap-1 p-3 rounded-xl border text-left transition-colors hover:opacity-90 ${config.bg} ${config.border}`}
                         >
-                          <Copy size={16} strokeWidth={2} className="flex-shrink-0 text-indigo-500 dark:text-indigo-400" />
-                          <span className="text-sm font-medium text-gray-800 dark:text-zinc-200 truncate">
-                            {cls.subject || '(Sem nome)'}
+                          <div className="flex items-center gap-2">
+                            <span className="text-indigo-600 dark:text-indigo-400">{config.icon}</span>
+                            <span className="text-xs font-semibold text-gray-800 dark:text-zinc-200">
+                              {config.label}
+                            </span>
+                          </div>
+                          <span className="text-sm font-medium text-gray-700 dark:text-zinc-300 truncate">
+                            {template.subject || '(Sem nome)'}
                           </span>
-                          {cls.time && (
-                            <span className="text-xs text-gray-500 dark:text-zinc-500 ml-auto flex-shrink-0">
-                              {cls.time}
+                          {template.time && (
+                            <span className="text-xs text-gray-500 dark:text-zinc-500">
+                              {template.time}
                             </span>
                           )}
                         </button>
-                      ))}
-                    </div>
+                      );
+                    })}
                   </div>
-                )}
+                </div>
               </div>
             </motion.div>
           </div>

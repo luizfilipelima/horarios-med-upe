@@ -234,7 +234,7 @@ export function DelegadoView() {
       <AddClassModal
         isOpen={addClassModalOpen}
         onClose={() => setAddClassModalOpen(false)}
-        classes={classes}
+        schedule={schedule}
         onAddEmpty={handleAddEmpty}
         onCopyFrom={handleAddFromCopy}
       />
