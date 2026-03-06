@@ -1,10 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { KeyRound, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabaseClient } from '../lib/supabase';
 import { isSupabaseConfigured } from '../lib/supabase';
+
+/** Remove o hash da URL para evitar que o Supabase reprocesse o token e dispare eventos em loop. */
+function clearHash() {
+  if (typeof window === 'undefined') return;
+  const { pathname, search } = window.location;
+  const newUrl = pathname + search || pathname;
+  window.history.replaceState(null, '', newUrl);
+}
 
 const inputClass =
   'w-full rounded-2xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3.5 text-sm text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-600 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500/40 focus:border-indigo-300 dark:focus:border-indigo-500/50 focus:outline-none transition-shadow';
@@ -13,11 +21,12 @@ const MIN_PASSWORD_LENGTH = 8;
 
 export function UpdatePasswordPage() {
   const navigate = useNavigate();
-  const { session, profile } = useAuth();
+  const { session, signOut } = useAuth();
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const redirectScheduled = useRef(false);
 
   // Supabase processa os parâmetros da URL (hash) ao montar; a session pode chegar logo depois
   const [waitingSession, setWaitingSession] = useState(true);
@@ -26,6 +35,11 @@ export function UpdatePasswordPage() {
     const t = setTimeout(() => setWaitingSession(false), 1500);
     return () => clearTimeout(t);
   }, []);
+
+  // Limpa o hash assim que temos sessão, para evitar reprocessamento e loop do gotrue-js
+  useEffect(() => {
+    if (session?.user) clearHash();
+  }, [session?.user]);
 
   const hasValidSession = Boolean(session?.user);
 
@@ -50,9 +64,15 @@ export function UpdatePasswordPage() {
         setError(msg);
         return;
       }
+      clearHash();
       setSuccess(true);
-      const redirectTo = profile?.role === 'ceo' ? '/admin' : '/login';
-      setTimeout(() => navigate(redirectTo, { replace: true }), 2000);
+      if (redirectScheduled.current) return;
+      redirectScheduled.current = true;
+      // Sign out evita lock/orphan do gotrue-js e erros 500 em refetch de perfil; usuário faz login de novo com a nova senha
+      setTimeout(async () => {
+        await signOut();
+        navigate('/login', { replace: true });
+      }, 1500);
     } finally {
       setSubmitting(false);
     }
@@ -132,7 +152,7 @@ export function UpdatePasswordPage() {
           </div>
           <h1 className="text-lg font-bold text-gray-900 dark:text-zinc-100 mb-2">Senha atualizada com sucesso!</h1>
           <p className="text-sm text-gray-500 dark:text-zinc-500">
-            {profile?.role === 'ceo' ? 'Redirecionando para o painel…' : 'Redirecionando para o login…'}
+            Redirecionando para o login…
           </p>
         </motion.div>
       </div>
