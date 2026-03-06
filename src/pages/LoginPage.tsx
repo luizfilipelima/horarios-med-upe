@@ -120,7 +120,22 @@ export function LoginPage() {
             </p>
           )}
           <div className="flex flex-col items-center mb-8">
-            <img src="/gradly.svg" alt="Gradly" className="h-12 w-auto mb-3 brightness-0 dark:brightness-100 dark:opacity-90" />
+            <div
+              className="h-12 w-[158px] shrink-0 mb-3"
+              style={{
+                WebkitMaskImage: "url('/gradly.svg')",
+                maskImage: "url('/gradly.svg')",
+                WebkitMaskSize: "contain",
+                maskSize: "contain",
+                WebkitMaskRepeat: "no-repeat",
+                maskRepeat: "no-repeat",
+                WebkitMaskPosition: "center",
+                maskPosition: "center",
+                backgroundColor: "#6366F1",
+              }}
+              role="img"
+              aria-label="Gradly"
+            />
             <p className="text-sm text-gray-500 dark:text-zinc-500 mt-1">
               {forgotMode ? 'Recuperação de senha' : 'Faça login para continuar'}
             </p>

@@ -119,7 +119,22 @@ export function UpdatePasswordPage() {
           animate={{ opacity: 1, y: 0 }}
           className="max-w-sm rounded-3xl bg-white dark:bg-zinc-900 p-8 shadow-lg dark:border dark:border-zinc-800 text-center"
         >
-          <img src="/gradly.svg" alt="Gradly" className="h-12 w-auto mx-auto mb-4 brightness-0 dark:brightness-100 dark:opacity-90" />
+          <div
+            className="h-12 w-[158px] shrink-0 mx-auto mb-4"
+            style={{
+              WebkitMaskImage: "url('/gradly.svg')",
+              maskImage: "url('/gradly.svg')",
+              WebkitMaskSize: "contain",
+              maskSize: "contain",
+              WebkitMaskRepeat: "no-repeat",
+              maskRepeat: "no-repeat",
+              WebkitMaskPosition: "center",
+              maskPosition: "center",
+              backgroundColor: "#6366F1",
+            }}
+            role="img"
+            aria-label="Gradly"
+          />
           <h1 className="text-lg font-bold text-gray-900 dark:text-zinc-100 mb-2">Link inválido ou expirado</h1>
           <p className="text-sm text-gray-500 dark:text-zinc-500 mb-6">
             Use a opção &quot;Esqueceu sua senha?&quot; na tela de login para receber um novo link.
@@ -145,7 +160,22 @@ export function UpdatePasswordPage() {
           animate={{ opacity: 1, scale: 1 }}
           className="max-w-sm rounded-3xl bg-white dark:bg-zinc-900 p-8 shadow-lg dark:border dark:border-zinc-800 text-center"
         >
-          <img src="/gradly.svg" alt="Gradly" className="h-12 w-auto mx-auto mb-4 brightness-0 dark:brightness-100 dark:opacity-90" />
+          <div
+            className="h-12 w-[158px] shrink-0 mx-auto mb-4"
+            style={{
+              WebkitMaskImage: "url('/gradly.svg')",
+              maskImage: "url('/gradly.svg')",
+              WebkitMaskSize: "contain",
+              maskSize: "contain",
+              WebkitMaskRepeat: "no-repeat",
+              maskRepeat: "no-repeat",
+              WebkitMaskPosition: "center",
+              maskPosition: "center",
+              backgroundColor: "#6366F1",
+            }}
+            role="img"
+            aria-label="Gradly"
+          />
           <h1 className="text-lg font-bold text-gray-900 dark:text-zinc-100 mb-2">Senha atualizada com sucesso!</h1>
           <p className="text-sm text-gray-500 dark:text-zinc-500">
             Redirecionando para o login…
@@ -166,7 +196,22 @@ export function UpdatePasswordPage() {
       >
         <div className="rounded-3xl bg-white dark:bg-zinc-900 shadow-lg shadow-gray-200/80 dark:shadow-none dark:border dark:border-zinc-800 overflow-hidden p-8">
           <div className="flex flex-col items-center mb-8">
-            <img src="/gradly.svg" alt="Gradly" className="h-12 w-auto mb-4 brightness-0 dark:brightness-100 dark:opacity-90" />
+            <div
+            className="h-12 w-[158px] shrink-0 mb-4"
+            style={{
+              WebkitMaskImage: "url('/gradly.svg')",
+              maskImage: "url('/gradly.svg')",
+              WebkitMaskSize: "contain",
+              maskSize: "contain",
+              WebkitMaskRepeat: "no-repeat",
+              maskRepeat: "no-repeat",
+              WebkitMaskPosition: "center",
+              maskPosition: "center",
+              backgroundColor: "#6366F1",
+            }}
+            role="img"
+            aria-label="Gradly"
+          />
             <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100 text-center">
               Redefinir Senha
             </h1>
