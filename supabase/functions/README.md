@@ -2,19 +2,13 @@
 
 Para o modal "Gerenciar Delegados" funcionar, é necessário implantar as Edge Functions no Supabase.
 
-## Implantação
+**→ Migração completa:** veja `MIGRATION-EDGE-FUNCTIONS-DELEGADOS.md` na raiz do projeto.
+
+## Resumo rápido
 
 ```bash
-# Instale o Supabase CLI (se ainda não tiver)
-npm i -g supabase
-
-# Login
 supabase login
-
-# Vincule ao projeto (na pasta raiz do app)
-supabase link
-
-# Implante as funções
+supabase link --project-ref SEU_PROJECT_REF
 supabase functions deploy criar-delegado
 supabase functions deploy listar-delegados
 ```
