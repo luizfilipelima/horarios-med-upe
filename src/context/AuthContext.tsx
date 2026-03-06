@@ -30,12 +30,12 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 async function fetchProfile(userId: string): Promise<UserProfile | null> {
   try {
-    const { data } = await supabaseClient
+    const { data, error } = await supabaseClient
       .from('perfis')
       .select('id, role, turma_id')
       .eq('id', userId)
-      .single();
-    if (!data) return null;
+      .maybeSingle();
+    if (error || !data) return null;
     return {
       id: data.id,
       role: data.role as UserRole,
@@ -94,11 +94,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(async (email: string, password: string) => {
     try {
-      const TIMEOUT_MS = 15000;
+      const TIMEOUT_MS = 30000;
       const result = await Promise.race([
         supabaseClient.auth.signInWithPassword({ email, password }),
         new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Tempo esgotado. Verifique sua conexão e as variáveis de ambiente do deploy.')), TIMEOUT_MS)
+          setTimeout(
+            () =>
+              reject(
+                new Error(
+                  'A requisição demorou muito. Confira no Vercel as variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY (e faça um novo deploy). Verifique também se o domínio do Supabase está acessível.'
+                )
+              ),
+            TIMEOUT_MS
+          )
         ),
       ]);
       return { error: result.error ?? null };

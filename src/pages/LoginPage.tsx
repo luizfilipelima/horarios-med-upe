@@ -22,6 +22,9 @@ export function LoginPage() {
             <p className="text-sm text-gray-500 dark:text-zinc-500 mb-4">
               Sua conta ainda não está vinculada. Contate o administrador para ser adicionado como CEO ou delegado.
             </p>
+            <p className="text-xs text-gray-500 dark:text-zinc-500 mb-4 rounded-2xl bg-gray-100 dark:bg-zinc-800/80 px-3 py-2 text-left">
+              Se você é o administrador: no Supabase (SQL Editor) confira se existe uma linha em <code className="text-indigo-500 dark:text-indigo-400">perfis</code> com <code className="text-indigo-500 dark:text-indigo-400">id</code> igual ao User UID em Authentication → Users e <code className="text-indigo-500 dark:text-indigo-400">role = &apos;ceo&apos;</code>.
+            </p>
             <button
               type="button"
               onClick={() => signOut()}
@@ -52,7 +55,7 @@ export function LoginPage() {
         let msg = 'Erro ao entrar. Tente novamente.';
         if (m.includes('invalid login') || m.includes('invalid_credentials')) msg = 'E-mail ou senha incorretos.';
         else if (m.includes('email not confirmed') || m.includes('confirm')) msg = 'Confirme seu e-mail antes de fazer login. Verifique sua caixa de entrada (e spam).';
-        else if (m.includes('tempo esgotado') || m.includes('variáveis')) msg = err.message ?? msg;
+        else if (m.includes('tempo esgotado') || m.includes('variáveis') || m.includes('requisição demorou')) msg = err.message ?? msg;
         else if (err.message) msg = err.message;
         setError(msg);
         return;
