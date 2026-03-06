@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 import { GodModeProvider } from './context/GodModeContext';
 
 const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
+const UpdatePasswordPage = lazy(() => import('./pages/UpdatePasswordPage').then(m => ({ default: m.UpdatePasswordPage })));
 const ConvitePage = lazy(() => import('./pages/ConvitePage').then(m => ({ default: m.ConvitePage })));
 const ProtectedAdminRoute = lazy(() => import('./components/ProtectedAdminRoute').then(m => ({ default: m.ProtectedAdminRoute })));
 const ProtectedDelegadoRoute = lazy(() => import('./components/ProtectedDelegadoRoute').then(m => ({ default: m.ProtectedDelegadoRoute })));
@@ -31,6 +32,7 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<Navigate to="/login" replace />} />
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/update-password" element={<UpdatePasswordPage />} />
                 <Route path="/convite/:token" element={<ConvitePage />} />
                 <Route path="/admin" element={<ProtectedAdminRoute />} />
                 <Route path="/delegado" element={<ProtectedDelegadoRoute />} />

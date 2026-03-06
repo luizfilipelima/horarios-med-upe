@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { GraduationCap, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { isSupabaseConfigured } from '../lib/supabase';
+import { isSupabaseConfigured, supabaseClient } from '../lib/supabase';
 
 const inputClass =
   'w-full rounded-2xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3.5 text-sm text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-600 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500/40 focus:border-indigo-300 dark:focus:border-indigo-500/50 focus:outline-none transition-shadow';
@@ -38,6 +38,8 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotMessage, setForgotMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,6 +57,24 @@ export function LoginPage() {
         setError(msg);
         return;
       }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleForgotSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setForgotMessage(null);
+    const trimmed = email.trim();
+    if (!trimmed) return;
+    setSubmitting(true);
+    try {
+      const redirectTo = `${window.location.origin}/update-password`;
+      await supabaseClient.auth.resetPasswordForEmail(trimmed, { redirectTo });
+      setForgotMessage('Se o e-mail existir, você receberá um link de recuperação. Verifique também a pasta de spam.');
+    } catch {
+      setForgotMessage('Se o e-mail existir, você receberá um link de recuperação. Verifique também a pasta de spam.');
     } finally {
       setSubmitting(false);
     }
@@ -82,68 +102,132 @@ export function LoginPage() {
               Gradly
             </h1>
             <p className="text-sm text-gray-500 dark:text-zinc-500 mt-1">
-              Faça login para continuar
+              {forgotMode ? 'Recuperação de senha' : 'Faça login para continuar'}
             </p>
+            {forgotMode && (
+              <p className="text-xs text-gray-500 dark:text-zinc-500 mt-0.5">
+                Informe seu e-mail para receber o link
+              </p>
+            )}
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="login-email" className="sr-only">
-                E-mail
-              </label>
-              <input
-                id="login-email"
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="E-mail"
-                className={inputClass}
-                required
-                disabled={submitting}
-              />
-            </div>
-            <div>
-              <label htmlFor="login-password" className="sr-only">
-                Senha
-              </label>
-              <input
-                id="login-password"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Senha"
-                className={inputClass}
-                required
-                disabled={submitting}
-              />
-            </div>
-
-            {error && (
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-sm text-red-500/90 dark:text-red-400/90 text-center"
-              >
-                {error}
-              </motion.p>
-            )}
-
-            <motion.button
-              type="submit"
-              disabled={submitting}
-              whileHover={!submitting ? { scale: 1.01 } : undefined}
-              whileTap={!submitting ? { scale: 0.99 } : undefined}
-              className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-indigo-500 text-white font-semibold text-sm shadow-md shadow-indigo-200 dark:shadow-indigo-950 hover:bg-indigo-600 disabled:opacity-70 disabled:pointer-events-none transition-colors"
-            >
-              {submitting ? (
-                <Loader2 size={20} strokeWidth={2} className="animate-spin" />
-              ) : (
-                'Entrar'
+          {forgotMode ? (
+            <form onSubmit={handleForgotSubmit} className="space-y-4">
+              <div>
+                <label htmlFor="forgot-email" className="sr-only">
+                  E-mail
+                </label>
+                <input
+                  id="forgot-email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="E-mail"
+                  className={inputClass}
+                  required
+                  disabled={submitting}
+                />
+              </div>
+              {forgotMessage && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-sm text-gray-600 dark:text-zinc-400 text-center rounded-2xl bg-gray-100 dark:bg-zinc-800 px-3 py-2"
+                >
+                  {forgotMessage}
+                </motion.p>
               )}
-            </motion.button>
-          </form>
+              <motion.button
+                type="submit"
+                disabled={submitting}
+                whileHover={!submitting ? { scale: 1.01 } : undefined}
+                whileTap={!submitting ? { scale: 0.99 } : undefined}
+                className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-indigo-500 text-white font-semibold text-sm shadow-md shadow-indigo-200 dark:shadow-indigo-950 hover:bg-indigo-600 disabled:opacity-70 disabled:pointer-events-none transition-colors"
+              >
+                {submitting ? (
+                  <Loader2 size={20} strokeWidth={2} className="animate-spin" />
+                ) : (
+                  'Enviar link de recuperação'
+                )}
+              </motion.button>
+              <button
+                type="button"
+                onClick={() => { setForgotMode(false); setForgotMessage(null); setError(null); }}
+                className="w-full text-sm text-gray-500 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-300 py-2"
+              >
+                Voltar ao login
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label htmlFor="login-email" className="sr-only">
+                  E-mail
+                </label>
+                <input
+                  id="login-email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="E-mail"
+                  className={inputClass}
+                  required
+                  disabled={submitting}
+                />
+              </div>
+              <div>
+                <label htmlFor="login-password" className="sr-only">
+                  Senha
+                </label>
+                <input
+                  id="login-password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Senha"
+                  className={inputClass}
+                  required
+                  disabled={submitting}
+                />
+              </div>
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setForgotMode(true)}
+                  className="text-sm text-gray-500 dark:text-zinc-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+                >
+                  Esqueceu sua senha?
+                </button>
+              </div>
+
+              {error && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-sm text-red-500/90 dark:text-red-400/90 text-center"
+                >
+                  {error}
+                </motion.p>
+              )}
+
+              <motion.button
+                type="submit"
+                disabled={submitting}
+                whileHover={!submitting ? { scale: 1.01 } : undefined}
+                whileTap={!submitting ? { scale: 0.99 } : undefined}
+                className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-indigo-500 text-white font-semibold text-sm shadow-md shadow-indigo-200 dark:shadow-indigo-950 hover:bg-indigo-600 disabled:opacity-70 disabled:pointer-events-none transition-colors"
+              >
+                {submitting ? (
+                  <Loader2 size={20} strokeWidth={2} className="animate-spin" />
+                ) : (
+                  'Entrar'
+                )}
+              </motion.button>
+            </form>
+          )}
         </div>
       </motion.div>
     </div>
