@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion';
-import { GraduationCap } from 'lucide-react';
+import { GraduationCap, ExternalLink } from 'lucide-react';
+
+const PLATFORM_URL = 'https://campus.upe.edu.py:86/moodle/my/courses.php';
 
 export function Header() {
   return (
@@ -17,9 +19,20 @@ export function Header() {
           Horários Medicina
         </h1>
       </div>
-      <p className="text-sm font-medium text-gray-400 pl-12">
+      <p className="text-sm font-medium text-gray-400 pl-12 mb-4">
         4º Año — Grupo C.1
       </p>
+      <motion.a
+        href={PLATFORM_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        className="inline-flex items-center gap-2 ml-12 px-4 py-2.5 rounded-full bg-indigo-50 text-indigo-600 hover:bg-indigo-100 text-sm font-semibold transition-colors"
+      >
+        <ExternalLink size={16} strokeWidth={2} />
+        Acessar Plataforma
+      </motion.a>
     </motion.header>
   );
 }
