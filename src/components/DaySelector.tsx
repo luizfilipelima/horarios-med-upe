@@ -23,7 +23,7 @@ export function DaySelector({ days, selectedId, onSelect, layoutId = 'day-pill' 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.15, ease: 'easeOut' }}
-      className="px-5 mb-6"
+      className=""
     >
       <div ref={containerRef} className="flex gap-2 overflow-x-auto pb-1">
         {days.map((day) => {

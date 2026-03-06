@@ -15,7 +15,10 @@ import {
 
 export interface AppState {
   schedule: DaySchedule[];
+  tituloPrincipal: string;
+  subtitulo: string;
   googleDriveUrl: string;
+  platformUrl: string;
   showSaturday: boolean;
   showSunday: boolean;
   groups: string[];
@@ -23,7 +26,10 @@ export interface AppState {
 
 interface AppContextValue extends AppState {
   visibleDays: DaySchedule[];
+  setTituloPrincipal: (v: string) => void;
+  setSubtitulo: (v: string) => void;
   setGoogleDriveUrl: (url: string) => void;
+  setPlatformUrl: (url: string) => void;
   setShowSaturday: (v: boolean) => void;
   setShowSunday: (v: boolean) => void;
   addGroup: (name: string) => void;
@@ -39,12 +45,21 @@ const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [schedule, setSchedule] = useState<DaySchedule[]>(initialScheduleWithWeekend);
+  const [tituloPrincipal, setTituloPrincipalState] = useState(() => 'Horários Medicina');
+  const [subtitulo, setSubtituloState] = useState(() => '4º Año — Grupo C.1');
   const [googleDriveUrl, setGoogleDriveUrlState] = useState(
     () => 'https://drive.google.com'
+  );
+  const [platformUrl, setPlatformUrlState] = useState(
+    () => 'https://campus.upe.edu.py:86/moodle/my/courses.php'
   );
   const [showSaturday, setShowSaturdayState] = useState(false);
   const [showSunday, setShowSundayState] = useState(false);
   const [groups, setGroupsState] = useState<string[]>(() => ['Grupo C.1']);
+
+  const setTituloPrincipal = useCallback((v: string) => setTituloPrincipalState(v), []);
+  const setSubtitulo = useCallback((v: string) => setSubtituloState(v), []);
+  const setPlatformUrl = useCallback((v: string) => setPlatformUrlState(v), []);
 
   const visibleDays = useMemo(() => {
     const base = schedule.slice(0, 5);
@@ -126,12 +141,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AppContextValue>(
     () => ({
       schedule,
+      tituloPrincipal,
+      subtitulo,
       googleDriveUrl,
+      platformUrl,
       showSaturday,
       showSunday,
       groups,
       visibleDays,
+      setTituloPrincipal,
+      setSubtitulo,
       setGoogleDriveUrl,
+      setPlatformUrl,
       setShowSaturday,
       setShowSunday,
       addGroup,
@@ -144,12 +165,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }),
     [
       schedule,
+      tituloPrincipal,
+      subtitulo,
       googleDriveUrl,
+      platformUrl,
       showSaturday,
       showSunday,
       groups,
       visibleDays,
+      setTituloPrincipal,
+      setSubtitulo,
       setGoogleDriveUrl,
+      setPlatformUrl,
       setShowSaturday,
       setShowSunday,
       addGroup,

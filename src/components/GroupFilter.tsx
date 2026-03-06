@@ -24,9 +24,9 @@ export function GroupFilter({ groups, selected, onSelect }: GroupFilterProps) {
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
-      className="px-5 mb-4"
+      className=""
     >
-      <div ref={containerRef} className="flex gap-2 overflow-x-auto pb-1">
+      <div ref={containerRef} className="flex gap-1.5 overflow-x-auto pb-1">
         {options.map((value) => {
           const isSelected = selected === value;
           return (
@@ -36,18 +36,18 @@ export function GroupFilter({ groups, selected, onSelect }: GroupFilterProps) {
               type="button"
               onClick={() => handleSelect(value)}
               className={`
-                relative flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold
+                relative flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold
                 transition-colors duration-200 focus:outline-none
                 ${isSelected
                   ? 'text-white'
-                  : 'bg-white dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700'
+                  : 'bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-zinc-700'
                 }
               `}
             >
               {isSelected && (
                 <motion.span
                   layoutId="group-filter-pill"
-                  className="absolute inset-0 rounded-full bg-indigo-500 shadow-md shadow-indigo-200 dark:shadow-indigo-950"
+                  className="absolute inset-0 rounded-full bg-indigo-500 shadow-sm dark:shadow-indigo-950/50"
                   transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                 />
               )}
