@@ -24,15 +24,20 @@ export function LoginPage() {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
-    const { error: err } = await signIn(email.trim(), password);
-    setSubmitting(false);
-    if (err) {
-      const msg =
-        err.message?.toLowerCase().includes('invalid login')
-          ? 'E-mail ou senha incorretos.'
-          : err.message ?? 'Erro ao entrar. Tente novamente.';
-      setError(msg);
-      return;
+    try {
+      const { error: err } = await signIn(email.trim(), password);
+      if (err) {
+        const msg =
+          err.message?.toLowerCase().includes('invalid login') || err.message?.toLowerCase().includes('invalid_credentials')
+            ? 'E-mail ou senha incorretos.'
+            : err.message?.toLowerCase().includes('tempo esgotado') || err.message?.toLowerCase().includes('variáveis')
+            ? err.message
+            : err.message ?? 'Erro ao entrar. Tente novamente.';
+        setError(msg);
+        return;
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 

@@ -93,8 +93,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session?.user?.id]);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-    return { error: error ?? null };
+    try {
+      const TIMEOUT_MS = 15000;
+      const result = await Promise.race([
+        supabaseClient.auth.signInWithPassword({ email, password }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Tempo esgotado. Verifique sua conexão e as variáveis de ambiente do deploy.')), TIMEOUT_MS)
+        ),
+      ]);
+      return { error: result.error ?? null };
+    } catch (e) {
+      return { error: e instanceof Error ? e : new Error('Erro ao conectar. Tente novamente.') };
+    }
   }, []);
 
   const signOut = useCallback(async () => {
