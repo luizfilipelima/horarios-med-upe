@@ -120,7 +120,7 @@ export function DelegadoView() {
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">
-                {tituloPrincipal} — Edición
+                {tituloPrincipal}
               </h1>
               <p className="text-sm font-medium text-gray-500 dark:text-zinc-500">
                 {subtitulo}

@@ -1,6 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, ExternalLink, FolderOpen, CalendarPlus, Shield, ClipboardList } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { GroupFilter } from './GroupFilter';
 
 const sectionLabelClass =
@@ -130,14 +129,16 @@ export function StudentMenuModal({
                 {/* Seção 3: Administração */}
                 <section>
                   <label className={sectionLabelClass}>Administração</label>
-                  <Link
-                    to="/delegado"
+                  <a
+                    href="https://app.gradly.to"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     onClick={onClose}
                     className={`${menuItemClass} border border-gray-200 dark:border-zinc-700 bg-transparent dark:bg-transparent hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:bg-indigo-50/50 dark:hover:bg-indigo-500/10 text-gray-600 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400`}
                   >
                     <Shield size={18} strokeWidth={2} className="flex-shrink-0" />
-                    Área do Administrador
-                  </Link>
+                    Painel do Delegado
+                  </a>
                 </section>
               </div>
             </motion.div>

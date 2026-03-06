@@ -12,7 +12,16 @@
       #root { min-height: 100vh; min-width: 100%; display: flex; align-items: center; justify-content: center; }
       #root:empty::after { content: 'Carregando…'; color: #6b7280; font-family: system-ui, sans-serif; }
     </style>
-    <!-- Tema dark aplicado pelo ThemeContext após o React montar (evita tela preta antes do JS) -->
+    <script>
+      (function() {
+        var key = 'horarios-theme';
+        var stored = localStorage.getItem(key);
+        var dark = stored === 'dark' || (stored !== 'light' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.classList.toggle('dark', dark);
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', dark ? '#09090b' : '#f8f7f5');
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

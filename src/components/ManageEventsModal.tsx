@@ -146,7 +146,7 @@ export function ManageEventsModal({ isOpen, onClose }: ManageEventsModalProps) {
                       <select
                         value={tipo}
                         onChange={(e) => setTipo(e.target.value as EventoTipo)}
-                        className={inputClass}
+                        className={`select-arrow select-arrow-right ${inputClass}`}
                       >
                         {TIPOS.map((t) => (
                           <option key={t.value} value={t.value}>

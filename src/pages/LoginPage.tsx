@@ -56,8 +56,7 @@ export function LoginPage() {
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotMessage, setForgotMessage] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (_e: React.FormEvent) => {
     setError(null);
     setIsLoading(true);
     try {
@@ -76,6 +75,12 @@ export function LoginPage() {
     }
   };
 
+  const onLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleSubmit(e);
+  };
+
   const handleForgotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -92,6 +97,12 @@ export function LoginPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const onForgotSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleForgotSubmit(e);
   };
 
   return (
@@ -126,7 +137,7 @@ export function LoginPage() {
           </div>
 
           {forgotMode ? (
-            <form onSubmit={handleForgotSubmit} className="space-y-4">
+            <form onSubmit={onForgotSubmit} className="space-y-4" noValidate>
               <div>
                 <label htmlFor="forgot-email" className="sr-only">
                   E-mail
@@ -174,7 +185,7 @@ export function LoginPage() {
               </button>
             </form>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={onLoginSubmit} className="space-y-4" noValidate>
               <div>
                 <label htmlFor="login-email" className="sr-only">
                   E-mail
