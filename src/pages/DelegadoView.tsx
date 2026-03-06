@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTurma } from '../context/TurmaContext';
 import { DaySelector } from '../components/DaySelector';
 import { ClassCardEditable } from '../components/ClassCardEditable';
+import { AddClassModal } from '../components/AddClassModal';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { Footer } from '../components/Footer';
 import { SettingsModal } from '../components/SettingsModal';
@@ -31,6 +32,7 @@ export function DelegadoView() {
     updateClass,
     addClass,
     removeClass,
+    moveClass,
     getInitialDayId,
     groups,
     toast,
@@ -40,6 +42,7 @@ export function DelegadoView() {
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [eventsModalOpen, setEventsModalOpen] = useState(false);
+  const [addClassModalOpen, setAddClassModalOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [selectedId, setSelectedId] = useState<string>(() => getInitialDayId());
   const selectedDay = visibleDays.find((d) => d.id === selectedId) ?? visibleDays[0];
@@ -60,9 +63,47 @@ export function DelegadoView() {
     updateClass(selectedDay.id, index, { [field]: value });
   };
 
-  const handleAdd = () => {
+  const handleAddEmpty = () => {
     if (!selectedDay) return;
     addClass(selectedDay.id, { ...emptyClass });
+  };
+
+  const handleAddFromCopy = (item: ClassItem) => {
+    if (!selectedDay) return;
+    const copy: ClassItem = {
+      subject: item.subject,
+      time: item.time,
+      location: item.location,
+      professor: item.professor,
+      type: item.type,
+      grupoAlvo: item.grupoAlvo,
+    };
+    addClass(selectedDay.id, copy);
+  };
+
+  const handleDuplicate = (index: number) => {
+    if (!selectedDay) return;
+    const cls = classes[index];
+    if (!cls) return;
+    const copy: ClassItem = {
+      subject: cls.subject,
+      time: cls.time,
+      location: cls.location,
+      professor: cls.professor,
+      type: cls.type,
+      grupoAlvo: cls.grupoAlvo,
+    };
+    addClass(selectedDay.id, copy);
+  };
+
+  const handleMoveUp = (index: number) => {
+    if (!selectedDay) return;
+    moveClass(selectedDay.id, index, 'up');
+  };
+
+  const handleMoveDown = (index: number) => {
+    if (!selectedDay) return;
+    moveClass(selectedDay.id, index, 'down');
   };
 
   const schedulePageUrl = typeof window !== 'undefined' && slug
@@ -190,6 +231,13 @@ export function DelegadoView() {
 
       <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <ManageEventsModal isOpen={eventsModalOpen} onClose={() => setEventsModalOpen(false)} />
+      <AddClassModal
+        isOpen={addClassModalOpen}
+        onClose={() => setAddClassModalOpen(false)}
+        classes={classes}
+        onAddEmpty={handleAddEmpty}
+        onCopyFrom={handleAddFromCopy}
+      />
 
       <AnimatePresence>
         {toast && (
@@ -226,17 +274,22 @@ export function DelegadoView() {
           <>
         {classes.map((cls, i) => (
           <ClassCardEditable
-            key={`${selectedDay?.id}-${i}`}
+            key={`${selectedDay?.id}-${cls.id ?? i}-${i}`}
             item={cls}
             index={i}
             groups={groups}
+            canMoveUp={i > 0}
+            canMoveDown={i < classes.length - 1}
             onUpdate={(field, value) => handleUpdate(i, field, value)}
             onRemove={() => selectedDay && removeClass(selectedDay.id, i)}
+            onDuplicate={() => handleDuplicate(i)}
+            onMoveUp={() => handleMoveUp(i)}
+            onMoveDown={() => handleMoveDown(i)}
           />
         ))}
         <motion.button
           type="button"
-          onClick={handleAdd}
+          onClick={() => setAddClassModalOpen(true)}
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}
           className="flex items-center justify-center gap-2 w-full py-5 rounded-3xl border-2 border-dashed border-gray-200 dark:border-zinc-700 bg-gray-50/50 dark:bg-zinc-900/30 text-gray-500 dark:text-zinc-500 hover:border-indigo-200 dark:hover:border-indigo-500/40 hover:bg-indigo-50/30 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"

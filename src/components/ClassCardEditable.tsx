@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Clock, MapPin, User, Wifi, FlaskConical, BookOpen, Trash2, Users, Stethoscope } from 'lucide-react';
+import { Clock, MapPin, User, Wifi, FlaskConical, BookOpen, Trash2, Copy, ChevronUp, ChevronDown, Users, Stethoscope } from 'lucide-react';
 import type { ClassItem, ClassType } from '../data/schedule';
 import { GRUPO_TODOS } from '../data/schedule';
 
@@ -7,8 +7,13 @@ interface ClassCardEditableProps {
   item: ClassItem;
   index: number;
   groups: string[];
+  canMoveUp: boolean;
+  canMoveDown: boolean;
   onUpdate: (field: keyof ClassItem, value: string) => void;
   onRemove: () => void;
+  onDuplicate: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
 }
 
 const typeConfig: Record<ClassType, { label: string; bg: string; border: string; tag: string; tagText: string; icon: React.ReactNode }> = {
@@ -56,7 +61,7 @@ const typeOptions: { value: ClassType; label: string }[] = [
 const inputClass =
   'w-full rounded-xl border-0 bg-white/70 dark:bg-zinc-800/70 py-2 px-3 text-sm font-medium text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-600 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500/40 focus:outline-none';
 
-export function ClassCardEditable({ item, index, groups, onUpdate, onRemove }: ClassCardEditableProps) {
+export function ClassCardEditable({ item, index, groups, canMoveUp, canMoveDown, onUpdate, onRemove, onDuplicate, onMoveUp, onMoveDown }: ClassCardEditableProps) {
   const config = typeConfig[item.type];
   const grupoValue = item.grupoAlvo === GRUPO_TODOS || groups.includes(item.grupoAlvo)
     ? item.grupoAlvo
@@ -88,13 +93,49 @@ export function ClassCardEditable({ item, index, groups, onUpdate, onRemove }: C
             </option>
           ))}
         </select>
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+          <button
+            type="button"
+            onClick={onDuplicate}
+            aria-label="Duplicar aula"
+            className="p-2 rounded-xl text-gray-400 dark:text-zinc-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
+          >
+            <Copy size={18} strokeWidth={2} />
+          </button>
+          <button
+            type="button"
+            onClick={onRemove}
+            aria-label="Excluir aula"
+            className="p-2 rounded-xl text-gray-400 dark:text-zinc-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+          >
+            <Trash2 size={18} strokeWidth={2} />
+          </button>
+        </div>
+      </div>
+
+      {/* Reordenar: setas para cima/baixo */}
+      <div className="flex items-center gap-1 -mt-1">
         <button
           type="button"
-          onClick={onRemove}
-          aria-label="Excluir aula"
-          className="flex-shrink-0 p-2 rounded-xl text-gray-400 dark:text-zinc-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+          onClick={onMoveUp}
+          disabled={!canMoveUp}
+          aria-label="Mover para cima"
+          className={`p-1.5 rounded-lg transition-colors ${canMoveUp
+            ? 'text-gray-400 dark:text-zinc-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10'
+            : 'text-gray-300 dark:text-zinc-600 cursor-not-allowed'}`}
         >
-          <Trash2 size={18} strokeWidth={2} />
+          <ChevronUp size={16} strokeWidth={2} />
+        </button>
+        <button
+          type="button"
+          onClick={onMoveDown}
+          disabled={!canMoveDown}
+          aria-label="Mover para baixo"
+          className={`p-1.5 rounded-lg transition-colors ${canMoveDown
+            ? 'text-gray-400 dark:text-zinc-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10'
+            : 'text-gray-300 dark:text-zinc-600 cursor-not-allowed'}`}
+        >
+          <ChevronDown size={16} strokeWidth={2} />
         </button>
       </div>
 

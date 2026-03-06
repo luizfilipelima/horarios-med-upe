@@ -66,6 +66,7 @@ interface AppContextValue extends AppState {
   addClass: (dayId: string, classItem: ClassItem) => void;
   removeClass: (dayId: string, index: number) => void;
   updateClass: (dayId: string, index: number, classItem: Partial<ClassItem>) => void;
+  moveClass: (dayId: string, fromIndex: number, direction: 'up' | 'down') => void;
   getInitialDayId: () => string;
   saveConfig: () => Promise<void>;
 }
@@ -102,7 +103,7 @@ function mapAulaToClassItem(row: {
   };
 }
 
-function mapClassItemToAulaRow(dayId: string, c: ClassItem) {
+function mapClassItemToAulaRow(dayId: string, c: ClassItem, ordem: number) {
   return {
     dia_semana: dayId,
     materia: c.subject,
@@ -111,6 +112,7 @@ function mapClassItemToAulaRow(dayId: string, c: ClassItem) {
     professor: c.professor,
     tipo: c.type,
     grupo_alvo: c.grupoAlvo,
+    ordem,
   };
 }
 
@@ -160,7 +162,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       try {
         const [configRes, aulasRes, eventosRes] = await Promise.all([
           supabaseClient.from('configuracoes').select('*').eq('turma_id', turmaId).single(),
-          supabaseClient.from('aulas').select('*').eq('turma_id', turmaId).order('dia_semana'),
+          supabaseClient.from('aulas').select('*').eq('turma_id', turmaId).order('dia_semana', { ascending: true }).order('ordem', { ascending: true }),
           supabaseClient.from('eventos').select('*').eq('turma_id', turmaId).order('data', { ascending: true }),
         ]);
 
@@ -441,6 +443,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const moveClass = useCallback(
+    async (dayId: string, fromIndex: number, direction: 'up' | 'down') => {
+      const day = schedule.find((d) => d.id === dayId);
+      if (!day || day.classes.length < 2) return;
+      const toIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1;
+      if (toIndex < 0 || toIndex >= day.classes.length) return;
+
+      const itemFrom = day.classes[fromIndex];
+      const itemTo = day.classes[toIndex];
+      const idFrom = itemFrom?.id;
+      const idTo = itemTo?.id;
+
+      setSchedule((prev) =>
+        prev.map((d) => {
+          if (d.id !== dayId) return d;
+          const next = [...d.classes];
+          const [removed] = next.splice(fromIndex, 1);
+          next.splice(toIndex, 0, removed);
+          return { ...d, classes: next };
+        })
+      );
+
+      if (
+        SUPABASE_ENABLED &&
+        turmaId &&
+        idFrom &&
+        idTo &&
+        !String(idFrom).startsWith('temp-') &&
+        !String(idTo).startsWith('temp-')
+      ) {
+        await Promise.all([
+          supabaseClient.from('aulas').update({ ordem: toIndex }).eq('id', idFrom).eq('turma_id', turmaId),
+          supabaseClient.from('aulas').update({ ordem: fromIndex }).eq('id', idTo).eq('turma_id', turmaId),
+        ]);
+      }
+    },
+    [schedule, turmaId]
+  );
+
   const addClass = useCallback(
     async (dayId: string, classItem: ClassItem) => {
       const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -451,7 +492,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         )
       );
       if (!SUPABASE_ENABLED || !turmaId) return;
-      const row = { ...mapClassItemToAulaRow(dayId, classItem), turma_id: turmaId };
+      const day = schedule.find((d) => d.id === dayId);
+      const ordem = day ? day.classes.length : 0;
+      const row = { ...mapClassItemToAulaRow(dayId, classItem, ordem), turma_id: turmaId };
       const { data, error } = await supabaseClient.from('aulas').insert(row).select('id').single();
       if (error) {
         setSchedule((prev) =>
@@ -473,7 +516,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         )
       );
     },
-    [turmaId, showToast]
+    [schedule, turmaId, showToast]
   );
 
   const removeClass = useCallback(
@@ -481,9 +524,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const day = schedule.find((d) => d.id === dayId);
       const cls = day?.classes[index];
       const removed = cls ? { ...cls } : null;
+      const remaining = day ? day.classes.filter((_, i) => i !== index) : [];
       setSchedule((prev) =>
         prev.map((d) =>
-          d.id === dayId ? { ...d, classes: d.classes.filter((_, i) => i !== index) } : d
+          d.id === dayId ? { ...d, classes: remaining } : d
         )
       );
       if (!SUPABASE_ENABLED || !turmaId || !removed?.id || String(removed.id).startsWith('temp-')) return;
@@ -498,7 +542,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
           })
         );
         showToast('Falha ao excluir. Tente novamente.');
+        return;
       }
+      // Renumerar ordem das restantes para evitar duplicatas
+      await Promise.all(
+        remaining.map((c, i) =>
+          c.id && !String(c.id).startsWith('temp-')
+            ? supabaseClient.from('aulas').update({ ordem: i }).eq('id', c.id).eq('turma_id', turmaId)
+            : Promise.resolve()
+        )
+      );
     },
     [schedule, turmaId, showToast]
   );
@@ -576,6 +629,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addClass,
       removeClass,
       updateClass,
+      moveClass,
       getInitialDayId,
       saveConfig,
     }),
@@ -608,6 +662,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addClass,
       removeClass,
       updateClass,
+      moveClass,
       getInitialDayId,
       saveConfig,
     ]
