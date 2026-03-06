@@ -9,11 +9,30 @@ const inputClass =
   'w-full rounded-2xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3.5 text-sm text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-600 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500/40 focus:border-indigo-300 dark:focus:border-indigo-500/50 focus:outline-none transition-shadow';
 
 export function LoginPage() {
-  const { signIn, session, profile, profileLoading } = useAuth();
+  const { signIn, signOut, session, profile, profileLoading } = useAuth();
 
-  if (session && profile && !profileLoading) {
-    if (profile.role === 'ceo') return <Navigate to="/admin" replace />;
-    if (profile.role === 'delegado') return <Navigate to="/delegado" replace />;
+  if (session && !profileLoading) {
+    if (profile?.role === 'ceo') return <Navigate to="/admin" replace />;
+    if (profile?.role === 'delegado') return <Navigate to="/delegado" replace />;
+    if (profile === null) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-zinc-950 px-4 py-8">
+          <div className="max-w-sm rounded-3xl bg-white dark:bg-zinc-900 p-8 shadow-lg dark:border dark:border-zinc-800 text-center">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100 mb-2">Login realizado</h2>
+            <p className="text-sm text-gray-500 dark:text-zinc-500 mb-4">
+              Sua conta ainda não está vinculada. Contate o administrador para ser adicionado como CEO ou delegado.
+            </p>
+            <button
+              type="button"
+              onClick={() => signOut()}
+              className="px-4 py-2 rounded-2xl bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 font-medium text-sm hover:bg-gray-200 dark:hover:bg-zinc-700"
+            >
+              Sair
+            </button>
+          </div>
+        </div>
+      );
+    }
   }
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,12 +46,12 @@ export function LoginPage() {
     try {
       const { error: err } = await signIn(email.trim(), password);
       if (err) {
-        const msg =
-          err.message?.toLowerCase().includes('invalid login') || err.message?.toLowerCase().includes('invalid_credentials')
-            ? 'E-mail ou senha incorretos.'
-            : err.message?.toLowerCase().includes('tempo esgotado') || err.message?.toLowerCase().includes('variáveis')
-            ? err.message
-            : err.message ?? 'Erro ao entrar. Tente novamente.';
+        const m = err.message?.toLowerCase() ?? '';
+        let msg = 'Erro ao entrar. Tente novamente.';
+        if (m.includes('invalid login') || m.includes('invalid_credentials')) msg = 'E-mail ou senha incorretos.';
+        else if (m.includes('email not confirmed') || m.includes('confirm')) msg = 'Confirme seu e-mail antes de fazer login. Verifique sua caixa de entrada (e spam).';
+        else if (m.includes('tempo esgotado') || m.includes('variáveis')) msg = err.message ?? msg;
+        else if (err.message) msg = err.message;
         setError(msg);
         return;
       }
