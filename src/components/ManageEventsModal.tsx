@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, Plus, Trash2 } from 'lucide-react';
+import { X, Plus, Trash2, Loader2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import type { EventoTipo } from '../context/AppContext';
 
@@ -37,7 +37,7 @@ function formatEventDate(iso: string): string {
 }
 
 export function ManageEventsModal({ isOpen, onClose }: ManageEventsModalProps) {
-  const { eventos, addEvento, removeEvento } = useApp();
+  const { eventos, addEvento, removeEvento, savingMessage } = useApp();
 
   const [titulo, setTitulo] = useState('');
   const [materia, setMateria] = useState('');
@@ -46,12 +46,12 @@ export function ManageEventsModal({ isOpen, onClose }: ManageEventsModalProps) {
   const [descricao, setDescricao] = useState('');
   const [tipo, setTipo] = useState<EventoTipo>('Prova');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!titulo.trim()) return;
     const dateStr = data || new Date().toISOString().slice(0, 16);
     const iso = new Date(dateStr).toISOString();
-    addEvento({
+    await addEvento({
       titulo: titulo.trim(),
       materia: materia.trim(),
       data: iso,
@@ -157,12 +157,22 @@ export function ManageEventsModal({ isOpen, onClose }: ManageEventsModalProps) {
                     </div>
                     <motion.button
                       type="submit"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="mt-3 w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-indigo-500 text-white font-medium text-sm hover:bg-indigo-600 transition-colors"
+                      disabled={Boolean(savingMessage)}
+                      whileHover={!savingMessage ? { scale: 1.02 } : undefined}
+                      whileTap={!savingMessage ? { scale: 0.98 } : undefined}
+                      className="mt-3 w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-indigo-500 text-white font-medium text-sm hover:bg-indigo-600 disabled:opacity-80 transition-colors"
                     >
-                      <Plus size={18} strokeWidth={2} />
-                      Adicionar evento
+                      {savingMessage ? (
+                        <>
+                          <Loader2 size={18} strokeWidth={2} className="animate-spin" />
+                          {savingMessage}
+                        </>
+                      ) : (
+                        <>
+                          <Plus size={18} strokeWidth={2} />
+                          Adicionar evento
+                        </>
+                      )}
                     </motion.button>
                   </section>
                 </form>

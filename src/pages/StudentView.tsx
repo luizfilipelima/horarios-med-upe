@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { GraduationCap, Menu } from 'lucide-react';
+import { GraduationCap, Menu, Loader2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { DaySelector } from '../components/DaySelector';
 import { ScheduleList } from '../components/ScheduleList';
@@ -12,7 +12,7 @@ import { generateICS, downloadICS, countExportableClasses } from '../utils/gener
 import { diasAteEvento } from '../utils/eventos';
 
 export function StudentView() {
-  const { visibleDays, tituloPrincipal, subtitulo, googleDriveUrl, platformUrl, getInitialDayId, groups, eventos } = useApp();
+  const { visibleDays, tituloPrincipal, subtitulo, googleDriveUrl, platformUrl, getInitialDayId, groups, eventos, loadingInitial } = useApp();
   const [menuOpen, setMenuOpen] = useState(false);
   const [eventsTimelineOpen, setEventsTimelineOpen] = useState(false);
 
@@ -49,6 +49,21 @@ export function StudentView() {
     const ics = generateICS(visibleDays, selectedGroupFilter, eventos);
     downloadICS(ics);
   };
+
+  if (loadingInitial) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f8f7f5] dark:bg-zinc-950">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex flex-col items-center gap-3"
+        >
+          <Loader2 size={32} className="text-indigo-500 animate-spin" strokeWidth={2} />
+          <span className="text-sm text-gray-500 dark:text-zinc-500">Carregando...</span>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f8f7f5] dark:bg-zinc-950 transition-colors duration-300 max-w-md mx-auto">

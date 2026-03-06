@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, Plus, Check } from 'lucide-react';
+import { X, Plus, Check, Loader2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Toggle } from './Toggle';
 
@@ -32,6 +32,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     setShowSunday,
     addGroup,
     removeGroup,
+    savingMessage,
   } = useApp();
 
   const [newGroupName, setNewGroupName] = useState('');
@@ -195,12 +196,22 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 <motion.button
                   type="button"
                   onClick={onClose}
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                  className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-indigo-500 text-white font-semibold text-sm shadow-md shadow-indigo-200 dark:shadow-indigo-950 hover:bg-indigo-600 transition-colors"
+                  disabled={Boolean(savingMessage)}
+                  whileHover={!savingMessage ? { scale: 1.01 } : undefined}
+                  whileTap={!savingMessage ? { scale: 0.99 } : undefined}
+                  className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-indigo-500 text-white font-semibold text-sm shadow-md shadow-indigo-200 dark:shadow-indigo-950 hover:bg-indigo-600 disabled:opacity-80 transition-colors"
                 >
-                  <Check size={18} strokeWidth={2.5} />
-                  Salvar
+                  {savingMessage ? (
+                    <>
+                      <Loader2 size={18} strokeWidth={2.5} className="animate-spin" />
+                      {savingMessage}
+                    </>
+                  ) : (
+                    <>
+                      <Check size={18} strokeWidth={2.5} />
+                      Salvar
+                    </>
+                  )}
                 </motion.button>
               </div>
             </motion.div>

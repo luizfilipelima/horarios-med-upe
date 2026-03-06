@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { GraduationCap, ArrowLeft, Plus, Settings, Link2, Copy, Check, LifeBuoy, ClipboardList } from 'lucide-react';
+import { GraduationCap, ArrowLeft, Plus, Settings, Link2, Copy, Check, LifeBuoy, ClipboardList, LogOut } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { DaySelector } from '../components/DaySelector';
 import { ClassCardEditable } from '../components/ClassCardEditable';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -30,7 +31,9 @@ export function DelegadoView() {
     removeClass,
     getInitialDayId,
     groups,
+    savingMessage,
   } = useApp();
+  const { signOut } = useAuth();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [eventsModalOpen, setEventsModalOpen] = useState(false);
@@ -102,11 +105,23 @@ export function DelegadoView() {
                 {tituloPrincipal} — Edición
               </h1>
               <p className="text-sm font-medium text-gray-400 dark:text-zinc-500">
-                {subtitulo}
+                {savingMessage ?? subtitulo}
               </p>
             </div>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <motion.button
+              type="button"
+              onClick={() => signOut()}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="p-2 rounded-2xl bg-white dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+              aria-label="Sair"
+            >
+              <LogOut size={20} strokeWidth={2} />
+            </motion.button>
+          </div>
         </div>
 
         {/* Botões de ação globais — Soft UI, grid responsivo */}

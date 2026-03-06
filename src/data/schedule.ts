@@ -4,6 +4,8 @@ export type ClassType = 'teoria' | 'simulacion' | 'virtual' | 'practica';
 export const GRUPO_TODOS = 'Todos';
 
 export interface ClassItem {
+  /** UUID no Supabase; presente quando a aula veio do banco */
+  id?: string;
   subject: string;
   time: string;
   location: string;
@@ -182,6 +184,17 @@ export const initialScheduleWithWeekend: DaySchedule[] = [
   domingo,
 ];
 
+/** Ordem dos 7 dias para montar o cronograma a partir do banco */
+export const DAYS_ORDER: { id: string; label: string; shortLabel: string }[] = [
+  { id: 'lunes', label: 'Lunes', shortLabel: 'Lun' },
+  { id: 'martes', label: 'Martes', shortLabel: 'Mar' },
+  { id: 'miercoles', label: 'Miércoles', shortLabel: 'Mié' },
+  { id: 'jueves', label: 'Jueves', shortLabel: 'Jue' },
+  { id: 'viernes', label: 'Viernes', shortLabel: 'Vie' },
+  { id: 'sabado', label: 'Sábado', shortLabel: 'Sáb' },
+  { id: 'domingo', label: 'Domingo', shortLabel: 'Dom' },
+];
+
 export function getInitialDayId(): string {
   const today = new Date().getDay();
   const map: Record<number, string> = {
@@ -194,4 +207,9 @@ export function getInitialDayId(): string {
     0: 'domingo',
   };
   return map[today] ?? 'lunes';
+}
+
+/** Cria estrutura de 7 dias com arrays de aulas vazios (para hidratar a partir do Supabase) */
+export function createEmptySchedule(): DaySchedule[] {
+  return DAYS_ORDER.map((d) => ({ ...d, classes: [] }));
 }

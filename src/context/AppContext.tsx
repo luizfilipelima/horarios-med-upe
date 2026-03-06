@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -9,9 +10,16 @@ import {
 import {
   initialScheduleWithWeekend,
   getInitialDayId,
+  createEmptySchedule,
   type ClassItem,
   type DaySchedule,
+  type ClassType,
 } from '../data/schedule';
+import { supabaseClient } from '../lib/supabase';
+
+const SUPABASE_ENABLED = Boolean(
+  import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
 export type EventoTipo = 'Prova' | 'Trabalho' | 'Outros';
 
@@ -39,6 +47,8 @@ export interface AppState {
 
 interface AppContextValue extends AppState {
   visibleDays: DaySchedule[];
+  loadingInitial: boolean;
+  savingMessage: string | null;
   setTituloPrincipal: (v: string) => void;
   setSubtitulo: (v: string) => void;
   setGoogleDriveUrl: (url: string) => void;
@@ -54,28 +64,156 @@ interface AppContextValue extends AppState {
   removeClass: (dayId: string, index: number) => void;
   updateClass: (dayId: string, index: number, classItem: Partial<ClassItem>) => void;
   getInitialDayId: () => string;
+  saveConfig: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
 
+const defaultConfig = {
+  titulo: 'Horários Medicina',
+  subtitulo: '4º Año — Grupo C.1',
+  link_drive: 'https://drive.google.com',
+  link_plataforma: 'https://campus.upe.edu.py:86/moodle/my/courses.php',
+  ativar_sabado: false,
+  ativar_domingo: false,
+  array_de_grupos: ['Grupo C.1'],
+};
+
+function mapAulaToClassItem(row: {
+  id: string;
+  materia: string;
+  horario: string;
+  sala: string;
+  professor: string;
+  tipo: string;
+  grupo_alvo: string;
+}): ClassItem {
+  return {
+    id: row.id,
+    subject: row.materia ?? '',
+    time: row.horario ?? '',
+    location: row.sala ?? '',
+    professor: row.professor ?? '',
+    type: (row.tipo as ClassType) ?? 'teoria',
+    grupoAlvo: row.grupo_alvo ?? 'Todos',
+  };
+}
+
+function mapClassItemToAulaRow(dayId: string, c: ClassItem) {
+  return {
+    dia_semana: dayId,
+    materia: c.subject,
+    horario: c.time,
+    sala: c.location,
+    professor: c.professor,
+    tipo: c.type,
+    grupo_alvo: c.grupoAlvo,
+  };
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [schedule, setSchedule] = useState<DaySchedule[]>(initialScheduleWithWeekend);
-  const [tituloPrincipal, setTituloPrincipalState] = useState(() => 'Horários Medicina');
-  const [subtitulo, setSubtituloState] = useState(() => '4º Año — Grupo C.1');
-  const [googleDriveUrl, setGoogleDriveUrlState] = useState(
-    () => 'https://drive.google.com'
-  );
-  const [platformUrl, setPlatformUrlState] = useState(
-    () => 'https://campus.upe.edu.py:86/moodle/my/courses.php'
-  );
-  const [showSaturday, setShowSaturdayState] = useState(false);
-  const [showSunday, setShowSundayState] = useState(false);
-  const [groups, setGroupsState] = useState<string[]>(() => ['Grupo C.1']);
+  const [tituloPrincipal, setTituloPrincipalState] = useState(() => defaultConfig.titulo);
+  const [subtitulo, setSubtituloState] = useState(() => defaultConfig.subtitulo);
+  const [googleDriveUrl, setGoogleDriveUrlState] = useState(() => defaultConfig.link_drive);
+  const [platformUrl, setPlatformUrlState] = useState(() => defaultConfig.link_plataforma);
+  const [showSaturday, setShowSaturdayState] = useState(defaultConfig.ativar_sabado);
+  const [showSunday, setShowSundayState] = useState(defaultConfig.ativar_domingo);
+  const [groups, setGroupsState] = useState<string[]>(() => defaultConfig.array_de_grupos);
   const [eventos, setEventosState] = useState<EventoItem[]>(() => []);
+  const [loadingInitial, setLoadingInitial] = useState(SUPABASE_ENABLED);
+  const [savingMessage, setSavingMessage] = useState<string | null>(null);
 
-  const setTituloPrincipal = useCallback((v: string) => setTituloPrincipalState(v), []);
-  const setSubtitulo = useCallback((v: string) => setSubtituloState(v), []);
-  const setPlatformUrl = useCallback((v: string) => setPlatformUrlState(v), []);
+  const setSaving = useCallback((msg: string | null) => {
+    setSavingMessage(msg);
+  }, []);
+
+  useEffect(() => {
+    if (!SUPABASE_ENABLED) {
+      setLoadingInitial(false);
+      return;
+    }
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const [configRes, aulasRes, eventosRes] = await Promise.all([
+          supabaseClient.from('configuracoes').select('*').eq('id', 1).single(),
+          supabaseClient.from('aulas').select('*').order('dia_semana'),
+          supabaseClient.from('eventos').select('*').order('data', { ascending: true }),
+        ]);
+
+        if (cancelled) return;
+
+        if (configRes.data) {
+          const c = configRes.data as {
+            titulo?: string;
+            subtitulo?: string;
+            link_drive?: string;
+            link_plataforma?: string;
+            ativar_sabado?: boolean;
+            ativar_domingo?: boolean;
+            array_de_grupos?: string[];
+          };
+          if (c.titulo != null) setTituloPrincipalState(c.titulo);
+          if (c.subtitulo != null) setSubtituloState(c.subtitulo);
+          if (c.link_drive != null) setGoogleDriveUrlState(c.link_drive);
+          if (c.link_plataforma != null) setPlatformUrlState(c.link_plataforma);
+          if (c.ativar_sabado != null) setShowSaturdayState(c.ativar_sabado);
+          if (c.ativar_domingo != null) setShowSundayState(c.ativar_domingo);
+          if (c.array_de_grupos != null && Array.isArray(c.array_de_grupos))
+            setGroupsState(c.array_de_grupos);
+        }
+
+        const scheduleFromAulas = createEmptySchedule();
+        if (aulasRes.data && Array.isArray(aulasRes.data)) {
+          for (const row of aulasRes.data as Array<{
+            id: string;
+            dia_semana: string;
+            materia: string;
+            horario: string;
+            sala: string;
+            professor: string;
+            tipo: string;
+            grupo_alvo: string;
+          }>) {
+            const day = scheduleFromAulas.find((d) => d.id === row.dia_semana);
+            if (day) day.classes.push(mapAulaToClassItem(row));
+          }
+        }
+        setSchedule(scheduleFromAulas);
+
+        if (eventosRes.data && Array.isArray(eventosRes.data)) {
+          const list = (eventosRes.data as Array<{
+            id: string;
+            titulo: string;
+            materia: string;
+            data: string;
+            pontuacao: string;
+            descricao: string;
+            tipo: string;
+          }>).map((e) => ({
+            id: e.id,
+            titulo: e.titulo ?? '',
+            materia: e.materia ?? '',
+            data: typeof e.data === 'string' ? e.data : new Date(e.data).toISOString(),
+            pontuacao: e.pontuacao ?? '',
+            descricao: e.descricao ?? '',
+            tipo: (e.tipo as EventoTipo) ?? 'Prova',
+          }));
+          setEventosState(list);
+        }
+      } catch (_) {
+        if (!cancelled) setLoadingInitial(false);
+      } finally {
+        if (!cancelled) setLoadingInitial(false);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const visibleDays = useMemo(() => {
     const base = schedule.slice(0, 5);
@@ -84,44 +222,171 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return base;
   }, [schedule, showSaturday, showSunday]);
 
-  const setGoogleDriveUrl = useCallback((url: string) => {
-    setGoogleDriveUrlState(url);
-  }, []);
+  const persistConfig = useCallback(async () => {
+    if (!SUPABASE_ENABLED) return;
+    setSaving('Salvando...');
+    await supabaseClient
+      .from('configuracoes')
+      .update({
+        titulo: tituloPrincipal,
+        subtitulo,
+        link_drive: googleDriveUrl,
+        link_plataforma: platformUrl,
+        ativar_sabado: showSaturday,
+        ativar_domingo: showSunday,
+        array_de_grupos: groups,
+      })
+      .eq('id', 1);
+    setSaving(null);
+  }, [
+    tituloPrincipal,
+    subtitulo,
+    googleDriveUrl,
+    platformUrl,
+    showSaturday,
+    showSunday,
+    groups,
+  ]);
 
-  const setShowSaturday = useCallback((v: boolean) => {
-    setShowSaturdayState(v);
-  }, []);
+  const setTituloPrincipal = useCallback(
+    (v: string) => {
+      setTituloPrincipalState(v);
+      if (SUPABASE_ENABLED) {
+        setSaving('Salvando...');
+        supabaseClient.from('configuracoes').update({ titulo: v }).eq('id', 1).then(() => setSaving(null));
+      }
+    },
+    []
+  );
 
-  const setShowSunday = useCallback((v: boolean) => {
-    setShowSundayState(v);
-  }, []);
+  const setSubtitulo = useCallback(
+    (v: string) => {
+      setSubtituloState(v);
+      if (SUPABASE_ENABLED) {
+        setSaving('Salvando...');
+        supabaseClient.from('configuracoes').update({ subtitulo: v }).eq('id', 1).then(() => setSaving(null));
+      }
+    },
+    []
+  );
 
-  const addGroup = useCallback((name: string) => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    setGroupsState((prev) => (prev.includes(trimmed) ? prev : [...prev, trimmed]));
-  }, []);
+  const setGoogleDriveUrl = useCallback(
+    (url: string) => {
+      setGoogleDriveUrlState(url);
+      if (SUPABASE_ENABLED) {
+        setSaving('Salvando...');
+        supabaseClient.from('configuracoes').update({ link_drive: url }).eq('id', 1).then(() => setSaving(null));
+      }
+    },
+    []
+  );
 
-  const removeGroup = useCallback((name: string) => {
-    setGroupsState((prev) => prev.filter((g) => g !== name));
-    setSchedule((prev) =>
-      prev.map((d) => ({
-        ...d,
-        classes: d.classes.map((c) =>
-          c.grupoAlvo === name ? { ...c, grupoAlvo: 'Todos' } : c
-        ),
-      }))
-    );
-  }, []);
+  const setPlatformUrl = useCallback(
+    (v: string) => {
+      setPlatformUrlState(v);
+      if (SUPABASE_ENABLED) {
+        setSaving('Salvando...');
+        supabaseClient.from('configuracoes').update({ link_plataforma: v }).eq('id', 1).then(() => setSaving(null));
+      }
+    },
+    []
+  );
 
-  const addEvento = useCallback((item: Omit<EventoItem, 'id'>) => {
+  const setShowSaturday = useCallback(
+    (v: boolean) => {
+      setShowSaturdayState(v);
+      if (SUPABASE_ENABLED) {
+        setSaving('Salvando...');
+        supabaseClient.from('configuracoes').update({ ativar_sabado: v }).eq('id', 1).then(() => setSaving(null));
+      }
+    },
+    []
+  );
+
+  const setShowSunday = useCallback(
+    (v: boolean) => {
+      setShowSundayState(v);
+      if (SUPABASE_ENABLED) {
+        setSaving('Salvando...');
+        supabaseClient.from('configuracoes').update({ ativar_domingo: v }).eq('id', 1).then(() => setSaving(null));
+      }
+    },
+    []
+  );
+
+  const addGroup = useCallback(
+    (name: string) => {
+      const trimmed = name.trim();
+      if (!trimmed) return;
+      setGroupsState((prev) => {
+        const next = prev.includes(trimmed) ? prev : [...prev, trimmed];
+        if (SUPABASE_ENABLED) {
+          setSaving('Salvando...');
+          supabaseClient.from('configuracoes').update({ array_de_grupos: next }).eq('id', 1).then(() => setSaving(null));
+        }
+        return next;
+      });
+    },
+    []
+  );
+
+  const removeGroup = useCallback(
+    (name: string) => {
+      setGroupsState((prev) => {
+        const next = prev.filter((g) => g !== name);
+        setSchedule((s) =>
+          s.map((d) => ({
+            ...d,
+            classes: d.classes.map((c) =>
+              c.grupoAlvo === name ? { ...c, grupoAlvo: 'Todos' } : c
+            ),
+          }))
+        );
+        if (SUPABASE_ENABLED) {
+          setSaving('Salvando...');
+          Promise.all([
+            supabaseClient.from('configuracoes').update({ array_de_grupos: next }).eq('id', 1),
+            supabaseClient.from('aulas').update({ grupo_alvo: 'Todos' }).eq('grupo_alvo', name),
+          ]).finally(() => setSaving(null));
+        }
+        return next;
+      });
+    },
+    []
+  );
+
+  const addEvento = useCallback(async (item: Omit<EventoItem, 'id'>) => {
+    if (SUPABASE_ENABLED) {
+      setSaving('Salvando...');
+      const { data, error } = await supabaseClient.from('eventos').insert({
+        titulo: item.titulo,
+        materia: item.materia,
+        data: item.data,
+        pontuacao: item.pontuacao,
+        descricao: item.descricao,
+        tipo: item.tipo,
+      }).select('id').single();
+      setSaving(null);
+      if (!error && data) {
+        setEventosState((prev) => [...prev, { ...item, id: data.id }]);
+        return;
+      }
+    }
     const id = `ev-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     setEventosState((prev) => [...prev, { ...item, id }]);
   }, []);
 
-  const removeEvento = useCallback((id: string) => {
-    setEventosState((prev) => prev.filter((e) => e.id !== id));
-  }, []);
+  const removeEvento = useCallback(
+    async (id: string) => {
+      if (SUPABASE_ENABLED) {
+        setSaving('Salvando...');
+        await supabaseClient.from('eventos').delete().eq('id', id);
+        setSaving(null);
+      }
+      setEventosState((prev) => prev.filter((e) => e.id !== id));
+    },
+    []
+  );
 
   const updateDayClasses = useCallback((dayId: string, classes: ClassItem[]) => {
     setSchedule((prev) =>
@@ -129,28 +394,72 @@ export function AppProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
-  const addClass = useCallback((dayId: string, classItem: ClassItem) => {
-    setSchedule((prev) =>
-      prev.map((d) =>
-        d.id === dayId
-          ? { ...d, classes: [...d.classes, classItem] }
-          : d
-      )
-    );
-  }, []);
+  const addClass = useCallback(
+    async (dayId: string, classItem: ClassItem) => {
+      if (SUPABASE_ENABLED) {
+        setSaving('Salvando...');
+        const row = mapClassItemToAulaRow(dayId, classItem);
+        const { data, error } = await supabaseClient.from('aulas').insert(row).select('id').single();
+        setSaving(null);
+        if (!error && data) {
+          setSchedule((prev) =>
+            prev.map((d) =>
+              d.id === dayId
+                ? { ...d, classes: [...d.classes, { ...classItem, id: data.id }] }
+                : d
+            )
+          );
+          return;
+        }
+      }
+      setSchedule((prev) =>
+        prev.map((d) =>
+          d.id === dayId ? { ...d, classes: [...d.classes, classItem] } : d
+        )
+      );
+    },
+    []
+  );
 
-  const removeClass = useCallback((dayId: string, index: number) => {
-    setSchedule((prev) =>
-      prev.map((d) =>
-        d.id === dayId
-          ? { ...d, classes: d.classes.filter((_, i) => i !== index) }
-          : d
-      )
-    );
-  }, []);
+  const removeClass = useCallback(
+    async (dayId: string, index: number) => {
+      const day = schedule.find((d) => d.id === dayId);
+      const cls = day?.classes[index];
+      if (SUPABASE_ENABLED && cls?.id) {
+        setSaving('Salvando...');
+        await supabaseClient.from('aulas').delete().eq('id', cls.id);
+        setSaving(null);
+      }
+      setSchedule((prev) =>
+        prev.map((d) =>
+          d.id === dayId ? { ...d, classes: d.classes.filter((_, i) => i !== index) } : d
+        )
+      );
+    },
+    [schedule]
+  );
 
   const updateClass = useCallback(
-    (dayId: string, index: number, classItem: Partial<ClassItem>) => {
+    async (dayId: string, index: number, classItem: Partial<ClassItem>) => {
+      const day = schedule.find((d) => d.id === dayId);
+      const current = day?.classes[index];
+      if (!current) return;
+
+      if (SUPABASE_ENABLED && current.id) {
+        setSaving('Salvando...');
+        const row: Record<string, unknown> = {};
+        if (classItem.subject != null) row.materia = classItem.subject;
+        if (classItem.time != null) row.horario = classItem.time;
+        if (classItem.location != null) row.sala = classItem.location;
+        if (classItem.professor != null) row.professor = classItem.professor;
+        if (classItem.type != null) row.tipo = classItem.type;
+        if (classItem.grupoAlvo != null) row.grupo_alvo = classItem.grupoAlvo;
+        if (Object.keys(row).length > 0) {
+          await supabaseClient.from('aulas').update(row).eq('id', current.id);
+        }
+        setSaving(null);
+      }
+
       setSchedule((prev) =>
         prev.map((d) => {
           if (d.id !== dayId) return d;
@@ -160,8 +469,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         })
       );
     },
-    []
+    [schedule]
   );
+
+  const saveConfig = useCallback(async () => {
+    await persistConfig();
+  }, [persistConfig]);
 
   const value = useMemo<AppContextValue>(
     () => ({
@@ -175,6 +488,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       groups,
       eventos,
       visibleDays,
+      loadingInitial,
+      savingMessage,
       setTituloPrincipal,
       setSubtitulo,
       setGoogleDriveUrl,
@@ -190,6 +505,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       removeClass,
       updateClass,
       getInitialDayId,
+      saveConfig,
     }),
     [
       schedule,
@@ -202,6 +518,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       groups,
       eventos,
       visibleDays,
+      loadingInitial,
+      savingMessage,
       setTituloPrincipal,
       setSubtitulo,
       setGoogleDriveUrl,
@@ -216,6 +534,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addClass,
       removeClass,
       updateClass,
+      saveConfig,
     ]
   );
 
