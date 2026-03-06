@@ -10,8 +10,7 @@ interface DaySelectorProps {
   layoutId?: string;
 }
 
-const SCROLL_STEP = 180;
-const ARROW_ZONE = 56; // w-14 = 3.5rem em px para scroll-padding
+const ARROW_ZONE = 47; // área das setas e gradiente (px)
 
 export function DaySelector({ days, selectedId, onSelect, layoutId = 'day-pill' }: DaySelectorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -64,46 +63,47 @@ export function DaySelector({ days, selectedId, onSelect, layoutId = 'day-pill' 
     scrollToCenter(selectedId);
   }, [selectedId, scrollToCenter]);
 
-  const scroll = (direction: 'left' | 'right') => {
-    const el = containerRef.current;
-    if (!el) return;
-    el.scrollBy({
-      left: direction === 'left' ? -SCROLL_STEP : SCROLL_STEP,
-      behavior: 'smooth',
-    });
+  const goToAdjacentDay = (direction: 'left' | 'right') => {
+    const idx = days.findIndex((d) => d.id === selectedId);
+    if (idx < 0) return;
+    const nextIdx = direction === 'left' ? idx - 1 : idx + 1;
+    if (nextIdx < 0 || nextIdx >= days.length) return;
+    onSelect(days[nextIdx].id);
   };
+
+  const showLeftFade = canScrollLeft;
+  const showRightFade = canScrollRight;
+
+  const fadeMask =
+    showLeftFade || showRightFade
+      ? {
+          maskImage: `linear-gradient(to right, ${showLeftFade ? `transparent 0px, black ${ARROW_ZONE}px` : 'black 0px'}, black ${showRightFade ? `calc(100% - ${ARROW_ZONE}px), transparent 100%` : '100%'})`,
+          WebkitMaskImage: `linear-gradient(to right, ${showLeftFade ? `transparent 0px, black ${ARROW_ZONE}px` : 'black 0px'}, black ${showRightFade ? `calc(100% - ${ARROW_ZONE}px), transparent 100%` : '100%'})`,
+          maskSize: '100% 100%',
+          WebkitMaskSize: '100% 100%',
+        }
+      : {};
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.15, ease: 'easeOut' }}
-      className="relative w-full"
+      className="relative flex w-full items-center"
     >
-      {/* Gradientes de fade — pointer-events-none para clicar nos chips sob a névoa */}
-      <div
-        className="pointer-events-none absolute left-0 top-0 bottom-0 z-10 w-14 bg-gradient-to-r from-[#f8f7f5] to-transparent dark:from-zinc-950"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute right-0 top-0 bottom-0 z-10 w-14 bg-gradient-to-l from-[#f8f7f5] to-transparent dark:from-zinc-950"
-        aria-hidden
-      />
-
-      {/* Setas — centralizadas verticalmente, feedback apenas por scale (sem deslocamento) */}
+      {/* Setas — absolute, z-20, feedback apenas por scale (sem top/translate no clique) */}
       <AnimatePresence>
         {canScrollLeft && (
           <motion.button
             type="button"
-            onClick={() => scroll('left')}
+            onClick={() => goToAdjacentDay('left')}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.98 }}
-            style={{ transformOrigin: 'center center' }}
-            className="absolute left-2 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/5 border border-black/5 text-gray-700 dark:bg-white/10 dark:border-white/5 dark:text-zinc-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            whileHover={{ opacity: 0.9 }}
+            whileTap={{ opacity: 0.8 }}
+            className="absolute left-0 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/5 border border-black/5 text-gray-700 dark:bg-white/10 dark:border-white/5 dark:text-zinc-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
             aria-label="Dias anteriores"
           >
             <ChevronLeft size={20} strokeWidth={2.5} />
@@ -114,15 +114,14 @@ export function DaySelector({ days, selectedId, onSelect, layoutId = 'day-pill' 
         {canScrollRight && (
           <motion.button
             type="button"
-            onClick={() => scroll('right')}
+            onClick={() => goToAdjacentDay('right')}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.98 }}
-            style={{ transformOrigin: 'center center' }}
-            className="absolute right-2 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/5 border border-black/5 text-gray-700 dark:bg-white/10 dark:border-white/5 dark:text-zinc-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            whileHover={{ opacity: 0.9 }}
+            whileTap={{ opacity: 0.8 }}
+            className="absolute right-0 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/5 border border-black/5 text-gray-700 dark:bg-white/10 dark:border-white/5 dark:text-zinc-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
             aria-label="Próximos dias"
           >
             <ChevronRight size={20} strokeWidth={2.5} />
@@ -130,14 +129,32 @@ export function DaySelector({ days, selectedId, onSelect, layoutId = 'day-pill' 
         )}
       </AnimatePresence>
 
+      {/* Gradientes de fade — nunca no primeiro dia (esquerda) nem no último (direita) */}
+      {showLeftFade && (
+        <div
+          className="pointer-events-none absolute left-0 top-0 bottom-0 z-10 w-14 bg-gradient-to-r from-[#f8f7f5] to-transparent dark:from-zinc-950"
+          aria-hidden
+        />
+      )}
+      {showRightFade && (
+        <div
+          className="pointer-events-none absolute right-0 top-0 bottom-0 z-10 w-14 bg-gradient-to-l from-[#f8f7f5] to-transparent dark:from-zinc-950"
+          aria-hidden
+        />
+      )}
+
+      {/* Contêiner de scroll — inseta com mx para não ter dias atrás das setas */}
       <div
         ref={containerRef}
-        className="flex gap-2 overflow-x-auto overflow-y-hidden px-4 pb-1 scroll-smooth"
+        className="flex flex-1 min-w-0 items-center gap-2 overflow-x-auto overflow-y-hidden py-1 scroll-smooth"
         style={{
+          marginLeft: ARROW_ZONE,
+          marginRight: ARROW_ZONE,
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
           WebkitOverflowScrolling: 'touch',
           scrollPaddingInline: `${ARROW_ZONE}px`,
+          ...fadeMask,
         }}
       >
         {days.map((day) => {

@@ -19,6 +19,7 @@ import { useAuth } from '../context/AuthContext';
 import { useGodMode } from '../context/GodModeContext';
 import { supabaseClient } from '../lib/supabase';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { EditTurmaModal } from '../components/EditTurmaModal';
 
 interface Turma {
   id: string;
@@ -26,6 +27,7 @@ interface Turma {
   faculdade: string;
   slug_url: string;
   created_at: string;
+  ativa?: boolean;
 }
 
 interface KPI {
@@ -51,11 +53,12 @@ export function AdminView() {
   const [addSlug, setAddSlug] = useState('');
   const [addSaving, setAddSaving] = useState(false);
   const [inviteCopiedId, setInviteCopiedId] = useState<string | null>(null);
+  const [editModalTurma, setEditModalTurma] = useState<Turma | null>(null);
 
   const loadData = async () => {
     setLoading(true);
     const [turmasRes, perfisRes, aulasRes, eventosRes] = await Promise.all([
-      supabaseClient.from('turmas').select('id, nome, faculdade, slug_url, created_at').order('created_at', { ascending: false }),
+      supabaseClient.from('turmas').select('id, nome, faculdade, slug_url, created_at, ativa').order('created_at', { ascending: false }),
       supabaseClient.from('perfis').select('id, role').eq('role', 'delegado'),
       supabaseClient.from('aulas').select('id', { count: 'exact', head: true }),
       supabaseClient.from('eventos').select('id', { count: 'exact', head: true }),
@@ -268,6 +271,7 @@ export function AdminView() {
                   </motion.button>
                   <motion.button
                     type="button"
+                    onClick={() => setEditModalTurma(t)}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     className="p-2.5 rounded-2xl bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
@@ -409,6 +413,13 @@ export function AdminView() {
           </>
         )}
       </AnimatePresence>
+
+      <EditTurmaModal
+        turma={editModalTurma}
+        isOpen={editModalTurma !== null}
+        onClose={() => setEditModalTurma(null)}
+        onSuccess={loadData}
+      />
     </div>
   );
 }

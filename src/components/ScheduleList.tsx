@@ -35,7 +35,7 @@ export function ScheduleList({ day, selectedGroupFilter }: ScheduleListProps) {
         animate="visible"
         exit="exit"
         transition={{ duration: 0.22, ease: 'easeOut' }}
-        className="px-5 pb-10 flex flex-col gap-3"
+        className="pb-10 flex flex-col gap-3"
       >
         {filteredClasses.length === 0 ? (
           <motion.div

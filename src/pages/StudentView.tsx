@@ -72,7 +72,7 @@ export function StudentView() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
-        className="px-5 pt-12 pb-6"
+        className="px-5 pt-12 pb-5"
       >
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">

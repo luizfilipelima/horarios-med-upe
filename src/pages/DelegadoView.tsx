@@ -93,7 +93,7 @@ export function DelegadoView() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
-        className="px-5 pt-12 pb-4"
+        className="px-5 pt-12 pb-0"
       >
         <div className="flex items-center justify-between gap-3 mb-1">
           <div className="flex items-center gap-3">
