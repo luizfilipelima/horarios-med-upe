@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
-import { Clock, MapPin, User, Wifi, FlaskConical, BookOpen, Stethoscope } from 'lucide-react';
+import { Clock, MapPin, User, Users, Wifi, FlaskConical, BookOpen, Stethoscope } from 'lucide-react';
 import type { ClassItem, ClassType } from '../data/schedule';
+import { GRUPO_TODOS } from '../data/schedule';
 
 interface ClassCardProps {
   item: ClassItem;
@@ -78,13 +79,21 @@ export function ClassCard({ item, index }: ClassCardProps) {
       className={`rounded-3xl border p-5 ${config.bg} ${config.border} flex flex-col gap-3`}
     >
       <div className="flex items-start justify-between gap-2">
-        <h3 className="text-base font-bold text-gray-900 dark:text-zinc-100 leading-tight flex-1">
+        <h3 className="text-base font-bold text-gray-900 dark:text-zinc-100 leading-tight flex-1 min-w-0">
           {item.subject}
         </h3>
-        <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${config.tag} ${config.tagText}`}>
-          {config.icon}
-          {config.label}
-        </span>
+        <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
+          {item.grupoAlvo && item.grupoAlvo !== GRUPO_TODOS && (
+            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-100 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400">
+              <Users size={12} strokeWidth={2} />
+              {item.grupoAlvo}
+            </span>
+          )}
+          <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${config.tag} ${config.tagText}`}>
+            {config.icon}
+            {config.label}
+          </span>
+        </div>
       </div>
 
       <div className="flex flex-col gap-2">

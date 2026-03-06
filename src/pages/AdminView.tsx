@@ -21,6 +21,7 @@ import { supabaseClient } from '../lib/supabase';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { Footer } from '../components/Footer';
 import { EditTurmaModal } from '../components/EditTurmaModal';
+import { GerenciarDelegadosModal } from '../components/GerenciarDelegadosModal';
 
 interface Turma {
   id: string;
@@ -55,11 +56,15 @@ export function AdminView() {
   const [addSaving, setAddSaving] = useState(false);
   const [inviteCopiedId, setInviteCopiedId] = useState<string | null>(null);
   const [editModalTurma, setEditModalTurma] = useState<Turma | null>(null);
+  const [delegadosModalTurma, setDelegadosModalTurma] = useState<Turma | null>(null);
+
+  const [tituloByTurmaId, setTituloByTurmaId] = useState<Record<string, string>>({});
 
   const loadData = async () => {
     setLoading(true);
-    const [turmasRes, perfisRes, aulasRes, eventosRes] = await Promise.all([
+    const [turmasRes, configsRes, perfisRes, aulasRes, eventosRes] = await Promise.all([
       supabaseClient.from('turmas').select('id, nome, faculdade, slug_url, created_at').order('created_at', { ascending: false }),
+      supabaseClient.from('configuracoes').select('turma_id, titulo'),
       supabaseClient.from('perfis').select('id, role').eq('role', 'delegado'),
       supabaseClient.from('aulas').select('id', { count: 'exact', head: true }),
       supabaseClient.from('eventos').select('id', { count: 'exact', head: true }),
@@ -69,6 +74,13 @@ export function AdminView() {
     }
     const turmasData = (turmasRes.data ?? []) as Turma[];
     setTurmas(turmasData);
+    const tituloMap: Record<string, string> = {};
+    if (configsRes.data && Array.isArray(configsRes.data)) {
+      for (const row of configsRes.data as Array<{ turma_id: string; titulo: string | null }>) {
+        if (row.turma_id && row.titulo != null) tituloMap[row.turma_id] = row.titulo;
+      }
+    }
+    setTituloByTurmaId(tituloMap);
     setKpi({
       turmas: turmasData.length,
       delegados: (perfisRes.data?.length ?? 0),
@@ -243,7 +255,9 @@ export function AdminView() {
                 className="rounded-2xl bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
               >
                 <div className="min-w-0">
-                  <p className="font-semibold text-gray-900 dark:text-zinc-100 truncate">{t.nome}</p>
+                  <p className="font-semibold text-gray-900 dark:text-zinc-100 truncate">
+                    {tituloByTurmaId[t.id] ?? t.nome}
+                  </p>
                   <p className="text-sm text-gray-500 dark:text-zinc-500">
                     {t.faculdade} · <span className="font-mono">{t.slug_url}</span>
                   </p>
@@ -287,11 +301,12 @@ export function AdminView() {
                   </motion.button>
                   <motion.button
                     type="button"
+                    onClick={() => setDelegadosModalTurma(t)}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     className="p-2.5 rounded-2xl bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
                     aria-label="Criar Delegado"
-                    title="Criar Delegado"
+                    title="Gerenciar Delegados"
                   >
                     <UserPlus size={18} strokeWidth={2} />
                   </motion.button>
@@ -423,6 +438,13 @@ export function AdminView() {
         turma={editModalTurma}
         isOpen={editModalTurma !== null}
         onClose={() => setEditModalTurma(null)}
+        onSuccess={loadData}
+      />
+
+      <GerenciarDelegadosModal
+        turma={delegadosModalTurma}
+        isOpen={delegadosModalTurma !== null}
+        onClose={() => setDelegadosModalTurma(null)}
         onSuccess={loadData}
       />
 

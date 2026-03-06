@@ -74,7 +74,7 @@ export function ClassCardEditable({ item, index, groups, canMoveUp, canMoveDown,
       transition={{ delay: index * 0.06, duration: 0.3, ease: 'easeOut' }}
       className={`rounded-3xl border p-5 ${config.bg} ${config.border} flex flex-col gap-3 relative`}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <input
           type="text"
           value={item.subject}
@@ -82,17 +82,25 @@ export function ClassCardEditable({ item, index, groups, canMoveUp, canMoveDown,
           placeholder="Nome da matéria"
           className={`${inputClass} flex-1 min-w-0 font-bold`}
         />
-        <select
-          value={item.type}
-          onChange={(e) => onUpdate('type', e.target.value as ClassType)}
-          className={`select-arrow select-arrow-right-sm flex items-center gap-1.5 pl-2.5 py-1.5 rounded-full text-xs font-semibold flex-shrink-0 ${config.tag} ${config.tagText} border-0 cursor-pointer self-center`}
-        >
-          {typeOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {item.grupoAlvo && item.grupoAlvo !== GRUPO_TODOS && (
+            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-100 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 self-center">
+              <Users size={12} strokeWidth={2} />
+              {item.grupoAlvo}
+            </span>
+          )}
+          <select
+            value={item.type}
+            onChange={(e) => onUpdate('type', e.target.value as ClassType)}
+            className={`select-arrow select-arrow-right-sm flex items-center gap-1.5 pl-2.5 py-1.5 rounded-full text-xs font-semibold ${config.tag} ${config.tagText} border-0 cursor-pointer self-center`}
+          >
+            {typeOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="flex items-center gap-0.5 flex-shrink-0">
           <button
             type="button"

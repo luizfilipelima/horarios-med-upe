@@ -70,9 +70,9 @@ export function StudentMenuModal({
               </div>
 
               <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
-                {/* Seção 1: Filtro de Turma */}
+                {/* Seção 1: Filtro de Grupo */}
                 <section>
-                  <label className={sectionLabelClass}>Filtro de Turma</label>
+                  <label className={sectionLabelClass}>Filtro de Grupo</label>
                   <GroupFilter
                     groups={groups}
                     selected={selectedGroupFilter}
