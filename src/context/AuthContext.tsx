@@ -20,6 +20,7 @@ export interface UserProfile {
 interface AuthContextValue {
   session: Session | null;
   profile: UserProfile | null;
+  profileError: string | null;
   loading: boolean;
   profileLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
@@ -28,27 +29,24 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-async function fetchProfile(userId: string): Promise<UserProfile | null> {
-  try {
-    const { data, error } = await supabaseClient
-      .from('perfis')
-      .select('id, role, turma_id')
-      .eq('id', userId)
-      .maybeSingle();
-    if (error || !data) return null;
-    return {
-      id: data.id,
-      role: data.role as UserRole,
-      turma_id: data.turma_id,
-    };
-  } catch {
-    return null;
-  }
+async function fetchProfile(userId: string): Promise<{ profile: UserProfile | null; error: string | null }> {
+  const { data, error } = await supabaseClient
+    .from('perfis')
+    .select('id, role, turma_id')
+    .eq('id', userId)
+    .maybeSingle();
+  if (error) return { profile: null, error: error.message };
+  if (!data) return { profile: null, error: null };
+  return {
+    profile: { id: data.id, role: data.role as UserRole, turma_id: data.turma_id },
+    error: null,
+  };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(true);
 
@@ -67,9 +65,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: authData } = supabaseClient.auth.onAuthStateChange(async (_event, s) => {
       setSession(s);
       setProfileLoading(true);
+      setProfileError(null);
       if (s?.user?.id) {
-        const p = await fetchProfile(s.user.id);
+        const { profile: p, error: e } = await fetchProfile(s.user.id);
         setProfile(p);
+        setProfileError(e);
       } else {
         setProfile(null);
       }
@@ -82,42 +82,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!session?.user?.id) {
       setProfile(null);
+      setProfileError(null);
       setProfileLoading(false);
       return;
     }
     setProfileLoading(true);
-    fetchProfile(session.user.id).then((p) => {
+    setProfileError(null);
+    fetchProfile(session.user.id).then(({ profile: p, error: e }) => {
       setProfile(p);
+      setProfileError(e);
       setProfileLoading(false);
     });
   }, [session?.user?.id]);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    try {
-      const TIMEOUT_MS = 30000;
-      const result = await Promise.race([
-        supabaseClient.auth.signInWithPassword({ email, password }),
-        new Promise<never>((_, reject) =>
-          setTimeout(
-            () =>
-              reject(
-                new Error(
-                  'A requisição demorou muito. Confira no Vercel as variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY (e faça um novo deploy). Verifique também se o domínio do Supabase está acessível.'
-                )
-              ),
-            TIMEOUT_MS
-          )
-        ),
-      ]);
-      if (result.error) {
-        console.error('ERRO REAL DO SUPABASE:', result.error);
-        return { error: result.error as unknown as Error };
-      }
-      return { error: null };
-    } catch (e) {
-      console.error('ERRO REAL DO SUPABASE:', e);
-      return { error: e instanceof Error ? e : new Error(String(e)) };
-    }
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) return { error: error as unknown as Error };
+    return { error: null };
   }, []);
 
   const signOut = useCallback(async () => {
@@ -128,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthContextValue = {
     session,
     profile,
+    profileError,
     loading,
     profileLoading,
     signIn,

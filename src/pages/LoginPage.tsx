@@ -9,7 +9,7 @@ const inputClass =
   'w-full rounded-2xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3.5 text-sm text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-600 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500/40 focus:border-indigo-300 dark:focus:border-indigo-500/50 focus:outline-none transition-shadow';
 
 export function LoginPage() {
-  const { signIn, signOut, session, profile, profileLoading } = useAuth();
+  const { signIn, signOut, session, profile, profileError, profileLoading } = useAuth();
 
   if (session && !profileLoading) {
     if (profile?.role === 'ceo') return <Navigate to="/admin" replace />;
@@ -19,12 +19,18 @@ export function LoginPage() {
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-zinc-950 px-4 py-8">
           <div className="max-w-sm rounded-3xl bg-white dark:bg-zinc-900 p-8 shadow-lg dark:border dark:border-zinc-800 text-center">
             <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100 mb-2">Login realizado</h2>
-            <p className="text-sm text-gray-500 dark:text-zinc-500 mb-4">
-              Sua conta ainda não está vinculada. Contate o administrador para ser adicionado como CEO ou delegado.
-            </p>
-            <p className="text-xs text-gray-500 dark:text-zinc-500 mb-4 rounded-2xl bg-gray-100 dark:bg-zinc-800/80 px-3 py-2 text-left">
-              Se você é o administrador: no Supabase (SQL Editor) confira se existe uma linha em <code className="text-indigo-500 dark:text-indigo-400">perfis</code> com <code className="text-indigo-500 dark:text-indigo-400">id</code> igual ao User UID em Authentication → Users e <code className="text-indigo-500 dark:text-indigo-400">role = &apos;ceo&apos;</code>.
-            </p>
+            {profileError ? (
+              <p className="text-sm text-red-500 dark:text-red-400 mb-4">{profileError}</p>
+            ) : (
+              <>
+                <p className="text-sm text-gray-500 dark:text-zinc-500 mb-4">
+                  Sua conta ainda não está vinculada. Contate o administrador para ser adicionado como CEO ou delegado.
+                </p>
+                <p className="text-xs text-gray-500 dark:text-zinc-500 mb-4 rounded-2xl bg-gray-100 dark:bg-zinc-800/80 px-3 py-2 text-left">
+                  Se você é o administrador: no Supabase (SQL Editor) confira se existe uma linha em <code className="text-indigo-500 dark:text-indigo-400">perfis</code> com <code className="text-indigo-500 dark:text-indigo-400">id</code> igual ao User UID em Authentication → Users e <code className="text-indigo-500 dark:text-indigo-400">role = &apos;ceo&apos;</code>.
+                </p>
+              </>
+            )}
             <button
               type="button"
               onClick={() => signOut()}
@@ -51,9 +57,7 @@ export function LoginPage() {
     try {
       const { error: err } = await signIn(email.trim(), password);
       if (err) {
-        const msg = err?.message ?? err?.toString?.() ?? 'Erro ao entrar. Tente novamente.';
-        console.error('ERRO REAL DO SUPABASE:', err);
-        setError(msg);
+        setError(err.message ?? String(err));
         return;
       }
     } finally {
