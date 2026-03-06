@@ -6,9 +6,10 @@ interface DaySelectorProps {
   days: DaySchedule[];
   selectedId: string;
   onSelect: (id: string) => void;
+  layoutId?: string;
 }
 
-export function DaySelector({ days, selectedId, onSelect }: DaySelectorProps) {
+export function DaySelector({ days, selectedId, onSelect, layoutId = 'day-pill' }: DaySelectorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleSelect = (id: string) => {
@@ -24,10 +25,7 @@ export function DaySelector({ days, selectedId, onSelect }: DaySelectorProps) {
       transition={{ duration: 0.4, delay: 0.15, ease: 'easeOut' }}
       className="px-5 mb-6"
     >
-      <div
-        ref={containerRef}
-        className="flex gap-2 overflow-x-auto pb-1"
-      >
+      <div ref={containerRef} className="flex gap-2 overflow-x-auto pb-1">
         {days.map((day) => {
           const isSelected = day.id === selectedId;
           return (
@@ -40,14 +38,14 @@ export function DaySelector({ days, selectedId, onSelect }: DaySelectorProps) {
                 transition-colors duration-200 focus:outline-none
                 ${isSelected
                   ? 'text-white'
-                  : 'text-gray-500 bg-white hover:bg-gray-100'
+                  : 'text-gray-500 dark:text-zinc-400 bg-white dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700'
                 }
               `}
             >
               {isSelected && (
                 <motion.span
-                  layoutId="day-pill"
-                  className="absolute inset-0 rounded-full bg-indigo-500 shadow-md shadow-indigo-200"
+                  layoutId={layoutId}
+                  className="absolute inset-0 rounded-full bg-indigo-500 shadow-md shadow-indigo-200 dark:shadow-indigo-950"
                   transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                 />
               )}

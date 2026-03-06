@@ -8,6 +8,14 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>Horários Medicina — 4º Año C.1</title>
+    <script>
+      (function() {
+        var k = 'horarios-theme';
+        var v = localStorage.getItem(k);
+        if (v === 'dark' || v === 'light') document.documentElement.classList.toggle('dark', v === 'dark');
+        else if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.classList.add('dark');
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,4 +1,7 @@
-export type ClassType = 'teoria' | 'simulacion' | 'virtual';
+export type ClassType = 'teoria' | 'simulacion' | 'virtual' | 'practica';
+
+/** "Todos" = aula para todos os grupos; caso contrário = nome do grupo (ex: "Grupo C.1") */
+export const GRUPO_TODOS = 'Todos';
 
 export interface ClassItem {
   subject: string;
@@ -6,6 +9,8 @@ export interface ClassItem {
   location: string;
   professor: string;
   type: ClassType;
+  /** Grupo ao qual a aula se aplica: "Todos" ou o nome de um grupo */
+  grupoAlvo: string;
 }
 
 export interface DaySchedule {
@@ -27,6 +32,7 @@ export const schedule: DaySchedule[] = [
         location: 'Sala 27, 5º Piso, Bloque B',
         professor: 'Dra. Feltes',
         type: 'teoria',
+        grupoAlvo: 'Todos',
       },
       {
         subject: 'Medicina en Imágenes',
@@ -34,6 +40,7 @@ export const schedule: DaySchedule[] = [
         location: 'Sala 34, 1º Piso, Bloque E',
         professor: 'Dra. Maria Teresa Insfran',
         type: 'teoria',
+        grupoAlvo: 'Todos',
       },
       {
         subject: 'Oftalmología',
@@ -41,6 +48,7 @@ export const schedule: DaySchedule[] = [
         location: 'Virtual',
         professor: 'Dr. Emilio Carvalho',
         type: 'virtual',
+        grupoAlvo: 'Todos',
       },
     ],
   },
@@ -55,6 +63,7 @@ export const schedule: DaySchedule[] = [
         location: 'Sala 34, 1º Piso, Bloque E',
         professor: 'Dr. Jesus Tellez',
         type: 'teoria',
+        grupoAlvo: 'Todos',
       },
       {
         subject: 'Semiología Quirúrgica',
@@ -62,6 +71,7 @@ export const schedule: DaySchedule[] = [
         location: 'Sala 27, 5º Piso, Bloque B',
         professor: 'Dr. Walter Delgado',
         type: 'teoria',
+        grupoAlvo: 'Todos',
       },
       {
         subject: 'Terapeutica y Toxicología',
@@ -69,6 +79,7 @@ export const schedule: DaySchedule[] = [
         location: 'Sala 36, 2º Piso, Bloque E',
         professor: 'Dra. Diana Bogarin',
         type: 'teoria',
+        grupoAlvo: 'Todos',
       },
     ],
   },
@@ -83,6 +94,7 @@ export const schedule: DaySchedule[] = [
         location: 'Sala 34, 1º Piso, Bloque E',
         professor: 'Dra. Patricia Gonzalez',
         type: 'teoria',
+        grupoAlvo: 'Todos',
       },
       {
         subject: 'Patología Quirúrgica',
@@ -90,6 +102,7 @@ export const schedule: DaySchedule[] = [
         location: 'Sala 39, 2º Piso, Bloque E',
         professor: 'Dr. Elias Pinto',
         type: 'teoria',
+        grupoAlvo: 'Todos',
       },
       {
         subject: 'Ginecología y Obstetrícia',
@@ -97,6 +110,7 @@ export const schedule: DaySchedule[] = [
         location: 'C1 S - Sala Simulación G.O I',
         professor: 'Dra. Feltes',
         type: 'simulacion',
+        grupoAlvo: 'Todos',
       },
     ],
   },
@@ -111,6 +125,7 @@ export const schedule: DaySchedule[] = [
         location: 'C1 - Sala Clínica Pediátrica I',
         professor: 'Dr. Walter Delgado',
         type: 'simulacion',
+        grupoAlvo: 'Todos',
       },
       {
         subject: 'Semiología Medica',
@@ -118,6 +133,7 @@ export const schedule: DaySchedule[] = [
         location: 'Sala 33, 1º Piso, Bloque E',
         professor: 'Dr. Héctor Arnella',
         type: 'teoria',
+        grupoAlvo: 'Todos',
       },
     ],
   },
@@ -132,6 +148,7 @@ export const schedule: DaySchedule[] = [
         location: 'Virtual',
         professor: 'Dra. Ingrid Centurión',
         type: 'virtual',
+        grupoAlvo: 'Todos',
       },
       {
         subject: 'Semiología Medica',
@@ -139,20 +156,42 @@ export const schedule: DaySchedule[] = [
         location: 'C1 - Sala Semio. Médica',
         professor: 'Dr. Héctor Arnella',
         type: 'simulacion',
+        grupoAlvo: 'Todos',
       },
     ],
   },
 ];
 
-export const getInitialDayId = (): string => {
+const sabado: DaySchedule = {
+  id: 'sabado',
+  label: 'Sábado',
+  shortLabel: 'Sáb',
+  classes: [],
+};
+
+const domingo: DaySchedule = {
+  id: 'domingo',
+  label: 'Domingo',
+  shortLabel: 'Dom',
+  classes: [],
+};
+
+export const initialScheduleWithWeekend: DaySchedule[] = [
+  ...schedule,
+  sabado,
+  domingo,
+];
+
+export function getInitialDayId(): string {
   const today = new Date().getDay();
-  // 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri
   const map: Record<number, string> = {
     1: 'lunes',
     2: 'martes',
     3: 'miercoles',
     4: 'jueves',
     5: 'viernes',
+    6: 'sabado',
+    0: 'domingo',
   };
   return map[today] ?? 'lunes';
-};
+}
