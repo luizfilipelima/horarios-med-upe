@@ -51,12 +51,8 @@ export function LoginPage() {
     try {
       const { error: err } = await signIn(email.trim(), password);
       if (err) {
-        const m = err.message?.toLowerCase() ?? '';
-        let msg = 'Erro ao entrar. Tente novamente.';
-        if (m.includes('invalid login') || m.includes('invalid_credentials')) msg = 'E-mail ou senha incorretos.';
-        else if (m.includes('email not confirmed') || m.includes('confirm')) msg = 'Confirme seu e-mail antes de fazer login. Verifique sua caixa de entrada (e spam).';
-        else if (m.includes('tempo esgotado') || m.includes('variáveis') || m.includes('requisição demorou')) msg = err.message ?? msg;
-        else if (err.message) msg = err.message;
+        const msg = err?.message ?? err?.toString?.() ?? 'Erro ao entrar. Tente novamente.';
+        console.error('ERRO REAL DO SUPABASE:', err);
         setError(msg);
         return;
       }

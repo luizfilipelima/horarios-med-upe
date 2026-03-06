@@ -109,9 +109,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           )
         ),
       ]);
-      return { error: result.error ?? null };
+      if (result.error) {
+        console.error('ERRO REAL DO SUPABASE:', result.error);
+        return { error: result.error as unknown as Error };
+      }
+      return { error: null };
     } catch (e) {
-      return { error: e instanceof Error ? e : new Error('Erro ao conectar. Tente novamente.') };
+      console.error('ERRO REAL DO SUPABASE:', e);
+      return { error: e instanceof Error ? e : new Error(String(e)) };
     }
   }, []);
 

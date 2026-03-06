@@ -5,6 +5,11 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undef
 
 const hasConfig = Boolean(supabaseUrl && supabaseAnonKey);
 
+// Debug (não imprime valores completos por segurança)
+console.log('[Supabase] URL existe?', !!import.meta.env.VITE_SUPABASE_URL);
+console.log('[Supabase] Key existe?', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
+console.log('[Supabase] Configurado?', hasConfig);
+
 if (!hasConfig) {
   console.warn(
     'Supabase: VITE_SUPABASE_URL ou VITE_SUPABASE_ANON_KEY não definidos. Configure no .env (local) ou nas variáveis de ambiente do deploy (ex: Vercel).'
