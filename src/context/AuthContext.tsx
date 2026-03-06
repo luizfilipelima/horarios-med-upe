@@ -62,21 +62,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       });
 
-    const { data: authData } = supabaseClient.auth.onAuthStateChange(async (_event, s) => {
+    const { data: authData } = supabaseClient.auth.onAuthStateChange((_event, s) => {
       setSession(s);
-      setProfileLoading(true);
-      setProfileError(null);
-      if (s?.user?.id) {
-        const { profile: p, error: e } = await fetchProfile(s.user.id);
-        setProfile(p);
-        setProfileError(e);
-      } else {
+      if (!s?.user?.id) {
         setProfile(null);
+        setProfileError(null);
+        setProfileLoading(false);
       }
-      setProfileLoading(false);
+      // Profile é carregado pelo useEffect quando session.user.id muda (evita fetch duplicado)
     });
 
-    return () => authData?.subscription?.unsubscribe?.();
+    return () => {
+      if (authData?.subscription) authData.subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {

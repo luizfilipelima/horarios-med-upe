@@ -8,6 +8,12 @@ import { isSupabaseConfigured, supabaseClient } from '../lib/supabase';
 const inputClass =
   'w-full rounded-2xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3.5 text-sm text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-600 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500/40 focus:border-indigo-300 dark:focus:border-indigo-500/50 focus:outline-none transition-shadow';
 
+function isAbortOrLockError(err: unknown): boolean {
+  if (err instanceof DOMException && err.name === 'AbortError') return true;
+  const msg = err instanceof Error ? err.message : String(err);
+  return /lock broken|abort/i.test(msg);
+}
+
 export function LoginPage() {
   const { signIn, signOut, session, profile, profileError, profileLoading } = useAuth();
 
@@ -19,7 +25,7 @@ export function LoginPage() {
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-zinc-950 px-4 py-8">
           <div className="max-w-sm rounded-3xl bg-white dark:bg-zinc-900 p-8 shadow-lg dark:border dark:border-zinc-800 text-center">
             <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100 mb-2">Login realizado</h2>
-            {profileError ? (
+            {profileError && !isAbortOrLockError(new Error(profileError)) ? (
               <p className="text-sm text-red-500 dark:text-red-400 mb-4">{profileError}</p>
             ) : (
               <>
@@ -46,22 +52,27 @@ export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotMessage, setForgotMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSubmitting(true);
+    setIsLoading(true);
     try {
       const { error: err } = await signIn(email.trim(), password);
       if (err) {
+        if (isAbortOrLockError(err)) return; // requisição real provavelmente passou
         setError(err.message ?? String(err));
+        setIsLoading(false);
         return;
       }
-    } finally {
-      setSubmitting(false);
+      // Sucesso: não altera isLoading; a tela permanece carregando até o redirect assumir
+    } catch (err) {
+      if (isAbortOrLockError(err)) return;
+      setError(err instanceof Error ? err.message : String(err));
+      setIsLoading(false);
     }
   };
 
@@ -71,7 +82,7 @@ export function LoginPage() {
     setForgotMessage(null);
     const trimmed = email.trim();
     if (!trimmed) return;
-    setSubmitting(true);
+    setIsLoading(true);
     try {
       const redirectTo = `${window.location.origin}/update-password`;
       await supabaseClient.auth.resetPasswordForEmail(trimmed, { redirectTo });
@@ -79,7 +90,7 @@ export function LoginPage() {
     } catch {
       setForgotMessage('Se o e-mail existir, você receberá um link de recuperação. Verifique também a pasta de spam.');
     } finally {
-      setSubmitting(false);
+      setIsLoading(false);
     }
   };
 
@@ -129,7 +140,7 @@ export function LoginPage() {
                   placeholder="E-mail"
                   className={inputClass}
                   required
-                  disabled={submitting}
+                  disabled={isLoading}
                 />
               </div>
               {forgotMessage && (
@@ -143,12 +154,12 @@ export function LoginPage() {
               )}
               <motion.button
                 type="submit"
-                disabled={submitting}
-                whileHover={!submitting ? { scale: 1.01 } : undefined}
-                whileTap={!submitting ? { scale: 0.99 } : undefined}
+                disabled={isLoading}
+                whileHover={!isLoading ? { scale: 1.01 } : undefined}
+                whileTap={!isLoading ? { scale: 0.99 } : undefined}
                 className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-indigo-500 text-white font-semibold text-sm shadow-md shadow-indigo-200 dark:shadow-indigo-950 hover:bg-indigo-600 disabled:opacity-70 disabled:pointer-events-none transition-colors"
               >
-                {submitting ? (
+                {isLoading ? (
                   <Loader2 size={20} strokeWidth={2} className="animate-spin" />
                 ) : (
                   'Enviar link de recuperação'
@@ -177,7 +188,7 @@ export function LoginPage() {
                   placeholder="E-mail"
                   className={inputClass}
                   required
-                  disabled={submitting}
+                  disabled={isLoading}
                 />
               </div>
               <div>
@@ -193,7 +204,7 @@ export function LoginPage() {
                   placeholder="Senha"
                   className={inputClass}
                   required
-                  disabled={submitting}
+                  disabled={isLoading}
                 />
               </div>
               <div className="flex justify-end">
@@ -218,12 +229,12 @@ export function LoginPage() {
 
               <motion.button
                 type="submit"
-                disabled={submitting}
-                whileHover={!submitting ? { scale: 1.01 } : undefined}
-                whileTap={!submitting ? { scale: 0.99 } : undefined}
+                disabled={isLoading}
+                whileHover={!isLoading ? { scale: 1.01 } : undefined}
+                whileTap={!isLoading ? { scale: 0.99 } : undefined}
                 className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-indigo-500 text-white font-semibold text-sm shadow-md shadow-indigo-200 dark:shadow-indigo-950 hover:bg-indigo-600 disabled:opacity-70 disabled:pointer-events-none transition-colors"
               >
-                {submitting ? (
+                {isLoading ? (
                   <Loader2 size={20} strokeWidth={2} className="animate-spin" />
                 ) : (
                   'Entrar'
