@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { GraduationCap, Loader2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import { supabaseClient } from '../lib/supabase';
 
 const inputClass =
@@ -18,6 +19,7 @@ interface ConviteWithTurma {
 export function ConvitePage() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
+  const { refetchProfile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [convite, setConvite] = useState<ConviteWithTurma | null>(null);
   const [invalid, setInvalid] = useState(false);
@@ -107,6 +109,7 @@ export function ConvitePage() {
       return;
     }
 
+    await refetchProfile();
     setSubmitting(false);
     navigate('/delegado', { replace: true });
   };

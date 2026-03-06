@@ -25,6 +25,7 @@ interface AuthContextValue {
   profileLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  refetchProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -104,6 +105,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
   }, []);
 
+  const refetchProfile = useCallback(async () => {
+    const uid = supabaseClient.auth.getUser().then(({ data: { user } }) => user?.id);
+    const id = await uid;
+    if (!id) return;
+    setProfileLoading(true);
+    const { profile: p, error: e } = await fetchProfile(id);
+    setProfile(p);
+    setProfileError(e);
+    setProfileLoading(false);
+  }, []);
+
   const value: AuthContextValue = {
     session,
     profile,
@@ -112,6 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     profileLoading,
     signIn,
     signOut,
+    refetchProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

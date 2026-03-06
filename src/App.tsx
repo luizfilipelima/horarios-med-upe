@@ -1,10 +1,11 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { GodModeProvider } from './context/GodModeContext';
 
-const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
+const loginLoader = () => import('./pages/LoginPage').then(m => ({ default: m.LoginPage }));
+const LoginPage = lazy(loginLoader);
 const UpdatePasswordPage = lazy(() => import('./pages/UpdatePasswordPage').then(m => ({ default: m.UpdatePasswordPage })));
 const ConvitePage = lazy(() => import('./pages/ConvitePage').then(m => ({ default: m.ConvitePage })));
 const ProtectedAdminRoute = lazy(() => import('./components/ProtectedAdminRoute').then(m => ({ default: m.ProtectedAdminRoute })));
@@ -23,10 +24,14 @@ function RouteFallback() {
 }
 
 export default function App() {
+  useEffect(() => {
+    loginLoader();
+  }, []);
   return (
     <ThemeProvider>
       <AuthProvider>
         <GodModeProvider>
+          <div className="min-h-screen min-w-full bg-[#f8f7f5] dark:bg-zinc-950 transition-colors duration-300">
           <BrowserRouter>
             <Suspense fallback={<RouteFallback />}>
               <Routes>
@@ -40,6 +45,7 @@ export default function App() {
               </Routes>
             </Suspense>
           </BrowserRouter>
+          </div>
         </GodModeProvider>
       </AuthProvider>
     </ThemeProvider>

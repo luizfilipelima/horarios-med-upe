@@ -9,13 +9,13 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>Gradly</title>
     <style>
-      #root { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8f7f5; }
+      #root { min-height: 100vh; min-width: 100%; display: flex; align-items: center; justify-content: center; }
       #root:empty::after { content: 'Carregando…'; color: #6b7280; font-family: system-ui, sans-serif; }
     </style>
     <!-- Tema dark aplicado pelo ThemeContext após o React montar (evita tela preta antes do JS) -->
   </head>
-  <body style="background-color: #f8f7f5;">
+  <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="/src/main.tsx" fetchpriority="high"></script>
   </body>
 </html>
