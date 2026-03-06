@@ -13,6 +13,18 @@ import {
   type DaySchedule,
 } from '../data/schedule';
 
+export type EventoTipo = 'Prova' | 'Trabalho' | 'Outros';
+
+export interface EventoItem {
+  id: string;
+  titulo: string;
+  materia: string;
+  data: string; // ISO
+  pontuacao: string;
+  descricao: string;
+  tipo: EventoTipo;
+}
+
 export interface AppState {
   schedule: DaySchedule[];
   tituloPrincipal: string;
@@ -22,6 +34,7 @@ export interface AppState {
   showSaturday: boolean;
   showSunday: boolean;
   groups: string[];
+  eventos: EventoItem[];
 }
 
 interface AppContextValue extends AppState {
@@ -34,6 +47,8 @@ interface AppContextValue extends AppState {
   setShowSunday: (v: boolean) => void;
   addGroup: (name: string) => void;
   removeGroup: (name: string) => void;
+  addEvento: (item: Omit<EventoItem, 'id'>) => void;
+  removeEvento: (id: string) => void;
   updateDayClasses: (dayId: string, classes: ClassItem[]) => void;
   addClass: (dayId: string, classItem: ClassItem) => void;
   removeClass: (dayId: string, index: number) => void;
@@ -56,6 +71,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [showSaturday, setShowSaturdayState] = useState(false);
   const [showSunday, setShowSundayState] = useState(false);
   const [groups, setGroupsState] = useState<string[]>(() => ['Grupo C.1']);
+  const [eventos, setEventosState] = useState<EventoItem[]>(() => []);
 
   const setTituloPrincipal = useCallback((v: string) => setTituloPrincipalState(v), []);
   const setSubtitulo = useCallback((v: string) => setSubtituloState(v), []);
@@ -96,6 +112,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ),
       }))
     );
+  }, []);
+
+  const addEvento = useCallback((item: Omit<EventoItem, 'id'>) => {
+    const id = `ev-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    setEventosState((prev) => [...prev, { ...item, id }]);
+  }, []);
+
+  const removeEvento = useCallback((id: string) => {
+    setEventosState((prev) => prev.filter((e) => e.id !== id));
   }, []);
 
   const updateDayClasses = useCallback((dayId: string, classes: ClassItem[]) => {
@@ -148,6 +173,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       showSaturday,
       showSunday,
       groups,
+      eventos,
       visibleDays,
       setTituloPrincipal,
       setSubtitulo,
@@ -157,6 +183,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setShowSunday,
       addGroup,
       removeGroup,
+      addEvento,
+      removeEvento,
       updateDayClasses,
       addClass,
       removeClass,
@@ -172,6 +200,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       showSaturday,
       showSunday,
       groups,
+      eventos,
       visibleDays,
       setTituloPrincipal,
       setSubtitulo,
@@ -181,6 +210,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setShowSunday,
       addGroup,
       removeGroup,
+      addEvento,
+      removeEvento,
       updateDayClasses,
       addClass,
       removeClass,

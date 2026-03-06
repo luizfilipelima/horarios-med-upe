@@ -1,19 +1,25 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { GraduationCap, ExternalLink, FolderOpen, Settings2, CalendarPlus } from 'lucide-react';
+import { GraduationCap, Menu } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { DaySelector } from '../components/DaySelector';
-import { GroupFilter, FILTER_TODOS } from '../components/GroupFilter';
 import { ScheduleList } from '../components/ScheduleList';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { StudentMenuModal } from '../components/StudentMenuModal';
+import { EventsTimelineModal } from '../components/EventsTimelineModal';
+import { FILTER_TODOS } from '../components/GroupFilter';
 import { generateICS, downloadICS, countExportableClasses } from '../utils/generateICS';
-
-const quickActionClass =
-  'inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-zinc-400 bg-gray-50/80 dark:bg-zinc-800/50 hover:bg-gray-100 dark:hover:bg-zinc-700/60 hover:text-gray-900 dark:hover:text-zinc-200 border border-transparent hover:border-gray-200 dark:hover:border-zinc-600 transition-all duration-200';
+import { diasAteEvento } from '../utils/eventos';
 
 export function StudentView() {
-  const { visibleDays, tituloPrincipal, subtitulo, googleDriveUrl, platformUrl, getInitialDayId, groups } = useApp();
+  const { visibleDays, tituloPrincipal, subtitulo, googleDriveUrl, platformUrl, getInitialDayId, groups, eventos } = useApp();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [eventsTimelineOpen, setEventsTimelineOpen] = useState(false);
+
+  const futureEventsCount = useMemo(
+    () => eventos.filter((e) => diasAteEvento(e.data) >= 0).length,
+    [eventos]
+  );
   const [selectedId, setSelectedId] = useState<string>(() => getInitialDayId());
   const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>(FILTER_TODOS);
   const selectedDay = visibleDays.find((d) => d.id === selectedId) ?? visibleDays[0];
@@ -40,18 +46,18 @@ export function StudentView() {
       alert('Nenhuma aula no grupo selecionado para exportar.');
       return;
     }
-    const ics = generateICS(visibleDays, selectedGroupFilter);
+    const ics = generateICS(visibleDays, selectedGroupFilter, eventos);
     downloadICS(ics);
   };
 
   return (
     <div className="min-h-screen bg-[#f8f7f5] dark:bg-zinc-950 transition-colors duration-300 max-w-md mx-auto">
-      {/* Header: apenas identidade e tema */}
+      {/* Header: Logo, Títulos, Dark Mode, Menu */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
-        className="px-5 pt-12 pb-4"
+        className="px-5 pt-12 pb-6"
       >
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -69,93 +75,44 @@ export function StudentView() {
           </div>
           <div className="flex items-center gap-1">
             <ThemeToggle />
-            <Link
-              to="/delegado"
+            <button
+              type="button"
+              onClick={() => setMenuOpen(true)}
               className="p-2.5 rounded-full text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:text-zinc-400 dark:hover:text-indigo-400 dark:hover:bg-zinc-800 transition-colors"
-              aria-label="Página do Delegado"
-              title="Edición"
+              aria-label="Opções"
+              title="Opções"
             >
-              <Settings2 size={20} strokeWidth={2} />
-            </Link>
+              <Menu size={20} strokeWidth={2} />
+            </button>
           </div>
         </div>
       </motion.header>
 
-      {/* Ações Rápidas: botões com peso visual reduzido */}
-      <motion.section
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.08, ease: 'easeOut' }}
-        className="px-5 pt-2"
-      >
-        <div className="flex flex-wrap gap-2">
-          <motion.a
-            href={platformUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className={quickActionClass}
-          >
-            <ExternalLink size={15} strokeWidth={2} />
-            Acessar Plataforma
-          </motion.a>
-          <motion.a
-            href={googleDriveUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className={quickActionClass}
-          >
-            <FolderOpen size={15} strokeWidth={2} />
-            Google Drive
-          </motion.a>
-          <motion.button
-            type="button"
-            onClick={handleExportCalendar}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className={quickActionClass}
-          >
-            <CalendarPlus size={15} strokeWidth={2} />
-            Adicionar à Agenda
-          </motion.button>
-        </div>
-      </motion.section>
+      <StudentMenuModal
+        isOpen={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        groups={groups}
+        selectedGroupFilter={selectedGroupFilter}
+        setSelectedGroupFilter={setSelectedGroupFilter}
+        platformUrl={platformUrl}
+        googleDriveUrl={googleDriveUrl}
+        onExportCalendar={handleExportCalendar}
+        onOpenEvents={() => setEventsTimelineOpen(true)}
+        futureEventsCount={futureEventsCount}
+      />
+      <EventsTimelineModal isOpen={eventsTimelineOpen} onClose={() => setEventsTimelineOpen(false)} />
 
-      {/* Separador sutil + área Horários (filtro de grupo + dias) */}
-      <div className="mt-10 pt-1">
-        <div className="px-5">
-          <div className="h-px bg-gray-200 dark:bg-zinc-800" aria-hidden />
-        </div>
-
-        {/* Navegação: Grupo + Dias da semana */}
-        <div className="mt-8 px-5">
-          <p className="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-3">
-            Grupo
-          </p>
-          <GroupFilter
-            groups={groups}
-            selected={selectedGroupFilter}
-            onSelect={setSelectedGroupFilter}
-          />
-        </div>
-
-        <div className="mt-4 px-5">
-          <p className="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-3">
-            Dia da semana
-          </p>
-          <DaySelector
-            days={visibleDays}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-          />
-        </div>
+      {/* Seletor de Dias */}
+      <div className="px-5 mb-5">
+        <DaySelector
+          days={visibleDays}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+        />
       </div>
 
-      {/* Lista de cards com respiro */}
-      <div className="mt-8">
+      {/* Cards de Aula */}
+      <div className="px-5 pb-10">
         <ScheduleList day={selectedDay} selectedGroupFilter={selectedGroupFilter} />
       </div>
     </div>

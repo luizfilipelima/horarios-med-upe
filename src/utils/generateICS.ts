@@ -1,5 +1,6 @@
 import type { ClassItem, DaySchedule } from '../data/schedule';
 import { GRUPO_TODOS } from '../data/schedule';
+import type { EventoItem } from '../context/AppContext';
 
 const FILTER_TODOS = 'TODOS';
 
@@ -123,6 +124,50 @@ function buildEvent(
   return lines.map(foldLine).join('\r\n');
 }
 
+/** Formata data ISO para iCal datetime (YYYYMMDDTHHMMSS). */
+function formatDateTimeICal(iso: string): string {
+  const d = new Date(iso);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const h = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  const s = String(d.getSeconds()).padStart(2, '0');
+  return `${y}${m}${day}T${h}${min}${s}`;
+}
+
+/** Gera VEVENT para um evento de avaliação (Prova/Trabalho). Alarme 1 dia antes. */
+function buildEventFromEvento(ev: EventoItem, dtstamp: string): string {
+  const start = new Date(ev.data);
+  const end = new Date(start.getTime() + 60 * 60 * 1000); // +1h
+  const dtStart = formatDateTimeICal(ev.data);
+  const dtEnd = formatDateTimeICal(end.toISOString());
+  const uid = `ev-${ev.id}@horarios-medicina`;
+  const summary = escapeICalText(`[${ev.tipo}] ${ev.titulo}`);
+  const description = escapeICalText(
+    [ev.materia && `Matéria: ${ev.materia}`, ev.pontuacao && `Pontuação: ${ev.pontuacao}`, ev.descricao].filter(Boolean).join('\n')
+  );
+  const alarmDesc = escapeICalText(`${ev.tipo}: ${ev.titulo} — amanhã`);
+
+  const lines = [
+    'BEGIN:VEVENT',
+    `UID:${uid}`,
+    `DTSTAMP:${dtstamp}`,
+    `DTSTART:${dtStart}`,
+    `DTEND:${dtEnd}`,
+    `SUMMARY:${summary}`,
+    `DESCRIPTION:${description}`,
+    'BEGIN:VALARM',
+    'ACTION:DISPLAY',
+    'TRIGGER:-P1D',
+    `DESCRIPTION:${alarmDesc}`,
+    'END:VALARM',
+    'END:VEVENT',
+  ];
+
+  return lines.map(foldLine).join('\r\n');
+}
+
 /**
  * Conta quantas aulas seriam exportadas para o grupo selecionado.
  */
@@ -141,12 +186,13 @@ export function countExportableClasses(
 }
 
 /**
- * Gera o conteúdo do arquivo .ics com as aulas filtradas pelo grupo selecionado.
- * Eventos são recorrentes (semanal) e incluem alarme 10 min antes.
+ * Gera o conteúdo do arquivo .ics com as aulas filtradas pelo grupo selecionado
+ * e os eventos de avaliação (Prova/Trabalho) com alarme 1 dia antes.
  */
 export function generateICS(
   visibleDays: DaySchedule[],
-  selectedGroupFilter: string
+  selectedGroupFilter: string,
+  eventos: EventoItem[] = []
 ): string {
   const now = new Date();
   const dtstamp =
@@ -168,6 +214,10 @@ export function generateICS(
       const event = buildEvent(classItem, day.id, groupLabel, dtstamp);
       if (event) events.push(event);
     }
+  }
+
+  for (const ev of eventos) {
+    events.push(buildEventFromEvento(ev, dtstamp));
   }
 
   const body = events.join('\r\n');
