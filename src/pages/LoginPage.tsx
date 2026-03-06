@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { GraduationCap, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -7,7 +8,12 @@ const inputClass =
   'w-full rounded-2xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3.5 text-sm text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-600 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500/40 focus:border-indigo-300 dark:focus:border-indigo-500/50 focus:outline-none transition-shadow';
 
 export function LoginPage() {
-  const { signIn } = useAuth();
+  const { signIn, session, profile, profileLoading } = useAuth();
+
+  if (session && profile && !profileLoading) {
+    if (profile.role === 'ceo') return <Navigate to="/admin" replace />;
+    if (profile.role === 'delegado') return <Navigate to="/delegado" replace />;
+  }
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +49,7 @@ export function LoginPage() {
               <GraduationCap size={28} className="text-white" strokeWidth={2} />
             </div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100 text-center">
-              Área do Administrador
+              Gradly
             </h1>
             <p className="text-sm text-gray-500 dark:text-zinc-500 mt-1">
               Faça login para continuar

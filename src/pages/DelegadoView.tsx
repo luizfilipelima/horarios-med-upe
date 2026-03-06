@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { GraduationCap, ArrowLeft, Plus, Settings, Link2, Copy, Check, LifeBuoy, ClipboardList, LogOut } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
+import { useTurma } from '../context/TurmaContext';
+import { useGodMode } from '../context/GodModeContext';
 import { DaySelector } from '../components/DaySelector';
 import { ClassCardEditable } from '../components/ClassCardEditable';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -33,7 +35,9 @@ export function DelegadoView() {
     groups,
     savingMessage,
   } = useApp();
-  const { signOut } = useAuth();
+  const { signOut, profile } = useAuth();
+  const { slug } = useTurma();
+  const { godModeTurmaId, exitGodMode } = useGodMode();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [eventsModalOpen, setEventsModalOpen] = useState(false);
@@ -62,7 +66,9 @@ export function DelegadoView() {
     addClass(selectedDay.id, { ...emptyClass });
   };
 
-  const schedulePageUrl = typeof window !== 'undefined' ? `${window.location.origin}/` : '';
+  const schedulePageUrl = typeof window !== 'undefined' && slug
+    ? `${window.location.origin}/t/${slug}`
+    : '';
   const handleCopyScheduleLink = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -90,13 +96,24 @@ export function DelegadoView() {
       >
         <div className="flex items-center justify-between gap-3 mb-1">
           <div className="flex items-center gap-3">
-            <Link
-              to="/"
-              className="p-2 rounded-2xl bg-white dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
-              aria-label="Voltar"
-            >
-              <ArrowLeft size={20} strokeWidth={2} />
-            </Link>
+            {(profile?.role === 'ceo' && godModeTurmaId) ? (
+              <Link
+                to="/admin"
+                onClick={() => exitGodMode()}
+                className="p-2 rounded-2xl bg-white dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+                aria-label="Sair do Modo Deus"
+              >
+                <ArrowLeft size={20} strokeWidth={2} />
+              </Link>
+            ) : (
+              <Link
+                to="/login"
+                className="p-2 rounded-2xl bg-white dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+                aria-label="Voltar"
+              >
+                <ArrowLeft size={20} strokeWidth={2} />
+              </Link>
+            )}
             <div className="w-9 h-9 rounded-2xl bg-indigo-500 flex items-center justify-center shadow-md shadow-indigo-200 dark:shadow-indigo-950">
               <GraduationCap size={18} className="text-white" strokeWidth={2} />
             </div>

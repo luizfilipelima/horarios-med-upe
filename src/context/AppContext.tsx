@@ -16,6 +16,7 @@ import {
   type ClassType,
 } from '../data/schedule';
 import { supabaseClient } from '../lib/supabase';
+import { useTurma } from './TurmaContext';
 
 const SUPABASE_ENABLED = Boolean(
   import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -27,7 +28,7 @@ export interface EventoItem {
   id: string;
   titulo: string;
   materia: string;
-  data: string; // ISO
+  data: string;
   pontuacao: string;
   descricao: string;
   tipo: EventoTipo;
@@ -112,6 +113,8 @@ function mapClassItemToAulaRow(dayId: string, c: ClassItem) {
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  const { turmaId } = useTurma();
+
   const [schedule, setSchedule] = useState<DaySchedule[]>(initialScheduleWithWeekend);
   const [tituloPrincipal, setTituloPrincipalState] = useState(() => defaultConfig.titulo);
   const [subtitulo, setSubtituloState] = useState(() => defaultConfig.subtitulo);
@@ -121,7 +124,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [showSunday, setShowSundayState] = useState(defaultConfig.ativar_domingo);
   const [groups, setGroupsState] = useState<string[]>(() => defaultConfig.array_de_grupos);
   const [eventos, setEventosState] = useState<EventoItem[]>(() => []);
-  const [loadingInitial, setLoadingInitial] = useState(SUPABASE_ENABLED);
+  const [loadingInitial, setLoadingInitial] = useState(true);
   const [savingMessage, setSavingMessage] = useState<string | null>(null);
 
   const setSaving = useCallback((msg: string | null) => {
@@ -129,18 +132,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!SUPABASE_ENABLED) {
+    if (!SUPABASE_ENABLED || !turmaId) {
       setLoadingInitial(false);
       return;
     }
     let cancelled = false;
+    setLoadingInitial(true);
 
     async function load() {
       try {
         const [configRes, aulasRes, eventosRes] = await Promise.all([
-          supabaseClient.from('configuracoes').select('*').eq('id', 1).single(),
-          supabaseClient.from('aulas').select('*').order('dia_semana'),
-          supabaseClient.from('eventos').select('*').order('data', { ascending: true }),
+          supabaseClient.from('configuracoes').select('*').eq('turma_id', turmaId).single(),
+          supabaseClient.from('aulas').select('*').eq('turma_id', turmaId).order('dia_semana'),
+          supabaseClient.from('eventos').select('*').eq('turma_id', turmaId).order('data', { ascending: true }),
         ]);
 
         if (cancelled) return;
@@ -163,6 +167,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (c.ativar_domingo != null) setShowSundayState(c.ativar_domingo);
           if (c.array_de_grupos != null && Array.isArray(c.array_de_grupos))
             setGroupsState(c.array_de_grupos);
+        } else {
+          setTituloPrincipalState(defaultConfig.titulo);
+          setSubtituloState(defaultConfig.subtitulo);
+          setGoogleDriveUrlState(defaultConfig.link_drive);
+          setPlatformUrlState(defaultConfig.link_plataforma);
+          setShowSaturdayState(defaultConfig.ativar_sabado);
+          setShowSundayState(defaultConfig.ativar_domingo);
+          setGroupsState(defaultConfig.array_de_grupos);
         }
 
         const scheduleFromAulas = createEmptySchedule();
@@ -202,6 +214,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             tipo: (e.tipo as EventoTipo) ?? 'Prova',
           }));
           setEventosState(list);
+        } else {
+          setEventosState([]);
         }
       } catch (_) {
         if (!cancelled) setLoadingInitial(false);
@@ -210,10 +224,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     }
     load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    return () => { cancelled = true; };
+  }, [turmaId]);
 
   const visibleDays = useMemo(() => {
     const base = schedule.slice(0, 5);
@@ -223,11 +235,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [schedule, showSaturday, showSunday]);
 
   const persistConfig = useCallback(async () => {
-    if (!SUPABASE_ENABLED) return;
+    if (!SUPABASE_ENABLED || !turmaId) return;
     setSaving('Salvando...');
-    await supabaseClient
+    const { data: existing } = await supabaseClient
       .from('configuracoes')
-      .update({
+      .select('id')
+      .eq('turma_id', turmaId)
+      .maybeSingle();
+    if (existing) {
+      await supabaseClient.from('configuracoes').update({
         titulo: tituloPrincipal,
         subtitulo,
         link_drive: googleDriveUrl,
@@ -235,10 +251,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ativar_sabado: showSaturday,
         ativar_domingo: showSunday,
         array_de_grupos: groups,
-      })
-      .eq('id', 1);
+      }).eq('turma_id', turmaId);
+    } else {
+      await supabaseClient.from('configuracoes').insert({
+        turma_id: turmaId,
+        titulo: tituloPrincipal,
+        subtitulo,
+        link_drive: googleDriveUrl,
+        link_plataforma: platformUrl,
+        ativar_sabado: showSaturday,
+        ativar_domingo: showSunday,
+        array_de_grupos: groups,
+      });
+    }
     setSaving(null);
   }, [
+    turmaId,
     tituloPrincipal,
     subtitulo,
     googleDriveUrl,
@@ -251,67 +279,67 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const setTituloPrincipal = useCallback(
     (v: string) => {
       setTituloPrincipalState(v);
-      if (SUPABASE_ENABLED) {
+      if (SUPABASE_ENABLED && turmaId) {
         setSaving('Salvando...');
-        supabaseClient.from('configuracoes').update({ titulo: v }).eq('id', 1).then(() => setSaving(null));
+        supabaseClient.from('configuracoes').update({ titulo: v }).eq('turma_id', turmaId).then(() => setSaving(null));
       }
     },
-    []
+    [turmaId]
   );
 
   const setSubtitulo = useCallback(
     (v: string) => {
       setSubtituloState(v);
-      if (SUPABASE_ENABLED) {
+      if (SUPABASE_ENABLED && turmaId) {
         setSaving('Salvando...');
-        supabaseClient.from('configuracoes').update({ subtitulo: v }).eq('id', 1).then(() => setSaving(null));
+        supabaseClient.from('configuracoes').update({ subtitulo: v }).eq('turma_id', turmaId).then(() => setSaving(null));
       }
     },
-    []
+    [turmaId]
   );
 
   const setGoogleDriveUrl = useCallback(
     (url: string) => {
       setGoogleDriveUrlState(url);
-      if (SUPABASE_ENABLED) {
+      if (SUPABASE_ENABLED && turmaId) {
         setSaving('Salvando...');
-        supabaseClient.from('configuracoes').update({ link_drive: url }).eq('id', 1).then(() => setSaving(null));
+        supabaseClient.from('configuracoes').update({ link_drive: url }).eq('turma_id', turmaId).then(() => setSaving(null));
       }
     },
-    []
+    [turmaId]
   );
 
   const setPlatformUrl = useCallback(
     (v: string) => {
       setPlatformUrlState(v);
-      if (SUPABASE_ENABLED) {
+      if (SUPABASE_ENABLED && turmaId) {
         setSaving('Salvando...');
-        supabaseClient.from('configuracoes').update({ link_plataforma: v }).eq('id', 1).then(() => setSaving(null));
+        supabaseClient.from('configuracoes').update({ link_plataforma: v }).eq('turma_id', turmaId).then(() => setSaving(null));
       }
     },
-    []
+    [turmaId]
   );
 
   const setShowSaturday = useCallback(
     (v: boolean) => {
       setShowSaturdayState(v);
-      if (SUPABASE_ENABLED) {
+      if (SUPABASE_ENABLED && turmaId) {
         setSaving('Salvando...');
-        supabaseClient.from('configuracoes').update({ ativar_sabado: v }).eq('id', 1).then(() => setSaving(null));
+        supabaseClient.from('configuracoes').update({ ativar_sabado: v }).eq('turma_id', turmaId).then(() => setSaving(null));
       }
     },
-    []
+    [turmaId]
   );
 
   const setShowSunday = useCallback(
     (v: boolean) => {
       setShowSundayState(v);
-      if (SUPABASE_ENABLED) {
+      if (SUPABASE_ENABLED && turmaId) {
         setSaving('Salvando...');
-        supabaseClient.from('configuracoes').update({ ativar_domingo: v }).eq('id', 1).then(() => setSaving(null));
+        supabaseClient.from('configuracoes').update({ ativar_domingo: v }).eq('turma_id', turmaId).then(() => setSaving(null));
       }
     },
-    []
+    [turmaId]
   );
 
   const addGroup = useCallback(
@@ -320,14 +348,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (!trimmed) return;
       setGroupsState((prev) => {
         const next = prev.includes(trimmed) ? prev : [...prev, trimmed];
-        if (SUPABASE_ENABLED) {
+        if (SUPABASE_ENABLED && turmaId) {
           setSaving('Salvando...');
-          supabaseClient.from('configuracoes').update({ array_de_grupos: next }).eq('id', 1).then(() => setSaving(null));
+          supabaseClient.from('configuracoes').update({ array_de_grupos: next }).eq('turma_id', turmaId).then(() => setSaving(null));
         }
         return next;
       });
     },
-    []
+    [turmaId]
   );
 
   const removeGroup = useCallback(
@@ -342,23 +370,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ),
           }))
         );
-        if (SUPABASE_ENABLED) {
+        if (SUPABASE_ENABLED && turmaId) {
           setSaving('Salvando...');
           Promise.all([
-            supabaseClient.from('configuracoes').update({ array_de_grupos: next }).eq('id', 1),
-            supabaseClient.from('aulas').update({ grupo_alvo: 'Todos' }).eq('grupo_alvo', name),
+            supabaseClient.from('configuracoes').update({ array_de_grupos: next }).eq('turma_id', turmaId),
+            supabaseClient.from('aulas').update({ grupo_alvo: 'Todos' }).eq('grupo_alvo', name).eq('turma_id', turmaId),
           ]).finally(() => setSaving(null));
         }
         return next;
       });
     },
-    []
+    [turmaId]
   );
 
   const addEvento = useCallback(async (item: Omit<EventoItem, 'id'>) => {
-    if (SUPABASE_ENABLED) {
+    if (SUPABASE_ENABLED && turmaId) {
       setSaving('Salvando...');
       const { data, error } = await supabaseClient.from('eventos').insert({
+        turma_id: turmaId,
         titulo: item.titulo,
         materia: item.materia,
         data: item.data,
@@ -374,18 +403,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     const id = `ev-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     setEventosState((prev) => [...prev, { ...item, id }]);
-  }, []);
+  }, [turmaId]);
 
   const removeEvento = useCallback(
     async (id: string) => {
-      if (SUPABASE_ENABLED) {
+      if (SUPABASE_ENABLED && turmaId) {
         setSaving('Salvando...');
-        await supabaseClient.from('eventos').delete().eq('id', id);
+        await supabaseClient.from('eventos').delete().eq('id', id).eq('turma_id', turmaId);
         setSaving(null);
       }
       setEventosState((prev) => prev.filter((e) => e.id !== id));
     },
-    []
+    [turmaId]
   );
 
   const updateDayClasses = useCallback((dayId: string, classes: ClassItem[]) => {
@@ -396,9 +425,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const addClass = useCallback(
     async (dayId: string, classItem: ClassItem) => {
-      if (SUPABASE_ENABLED) {
+      if (SUPABASE_ENABLED && turmaId) {
         setSaving('Salvando...');
-        const row = mapClassItemToAulaRow(dayId, classItem);
+        const row = { ...mapClassItemToAulaRow(dayId, classItem), turma_id: turmaId };
         const { data, error } = await supabaseClient.from('aulas').insert(row).select('id').single();
         setSaving(null);
         if (!error && data) {
@@ -418,16 +447,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         )
       );
     },
-    []
+    [turmaId]
   );
 
   const removeClass = useCallback(
     async (dayId: string, index: number) => {
       const day = schedule.find((d) => d.id === dayId);
       const cls = day?.classes[index];
-      if (SUPABASE_ENABLED && cls?.id) {
+      if (SUPABASE_ENABLED && turmaId && cls?.id) {
         setSaving('Salvando...');
-        await supabaseClient.from('aulas').delete().eq('id', cls.id);
+        await supabaseClient.from('aulas').delete().eq('id', cls.id).eq('turma_id', turmaId);
         setSaving(null);
       }
       setSchedule((prev) =>
@@ -436,7 +465,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         )
       );
     },
-    [schedule]
+    [schedule, turmaId]
   );
 
   const updateClass = useCallback(
@@ -445,7 +474,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const current = day?.classes[index];
       if (!current) return;
 
-      if (SUPABASE_ENABLED && current.id) {
+      if (SUPABASE_ENABLED && turmaId && current.id) {
         setSaving('Salvando...');
         const row: Record<string, unknown> = {};
         if (classItem.subject != null) row.materia = classItem.subject;
@@ -455,7 +484,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (classItem.type != null) row.tipo = classItem.type;
         if (classItem.grupoAlvo != null) row.grupo_alvo = classItem.grupoAlvo;
         if (Object.keys(row).length > 0) {
-          await supabaseClient.from('aulas').update(row).eq('id', current.id);
+          await supabaseClient.from('aulas').update(row).eq('id', current.id).eq('turma_id', turmaId);
         }
         setSaving(null);
       }
@@ -469,7 +498,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         })
       );
     },
-    [schedule]
+    [schedule, turmaId]
   );
 
   const saveConfig = useCallback(async () => {

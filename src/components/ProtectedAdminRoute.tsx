@@ -3,9 +3,9 @@ import { Loader2 } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LoginPage } from '../pages/LoginPage';
-import { DelegadoRoute } from './DelegadoRoute';
+import { AdminView } from '../pages/AdminView';
 
-export function ProtectedDelegadoRoute() {
+export function ProtectedAdminRoute() {
   const { session, profile, loading, profileLoading } = useAuth();
 
   if (loading || profileLoading) {
@@ -27,9 +27,9 @@ export function ProtectedDelegadoRoute() {
     return <LoginPage />;
   }
 
-  if (profile?.role !== 'delegado' && profile?.role !== 'ceo') {
+  if (profile?.role !== 'ceo') {
     return <Navigate to="/login" replace />;
   }
 
-  return <DelegadoRoute />;
+  return <AdminView />;
 }

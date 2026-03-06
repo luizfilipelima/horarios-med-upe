@@ -9,18 +9,48 @@ import {
 import type { Session } from '@supabase/supabase-js';
 import { supabaseClient } from '../lib/supabase';
 
+export type UserRole = 'ceo' | 'delegado';
+
+export interface UserProfile {
+  id: string;
+  role: UserRole;
+  turma_id: string | null;
+}
+
 interface AuthContextValue {
   session: Session | null;
+  profile: UserProfile | null;
   loading: boolean;
+  profileLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+async function fetchProfile(userId: string): Promise<UserProfile | null> {
+  try {
+    const { data } = await supabaseClient
+      .from('perfis')
+      .select('id, role, turma_id')
+      .eq('id', userId)
+      .single();
+    if (!data) return null;
+    return {
+      id: data.id,
+      role: data.role as UserRole,
+      turma_id: data.turma_id,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(true);
 
   useEffect(() => {
     supabaseClient.auth.getSession().then(({ data: { session: s } }) => {
@@ -30,12 +60,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabaseClient.auth.onAuthStateChange((_event, s) => {
+    } = supabaseClient.auth.onAuthStateChange(async (_event, s) => {
       setSession(s);
+      setProfileLoading(true);
+      if (s?.user?.id) {
+        const p = await fetchProfile(s.user.id);
+        setProfile(p);
+      } else {
+        setProfile(null);
+      }
+      setProfileLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!session?.user?.id) {
+      setProfile(null);
+      setProfileLoading(false);
+      return;
+    }
+    setProfileLoading(true);
+    fetchProfile(session.user.id).then((p) => {
+      setProfile(p);
+      setProfileLoading(false);
+    });
+  }, [session?.user?.id]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
@@ -44,11 +95,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     await supabaseClient.auth.signOut();
+    setProfile(null);
   }, []);
 
   const value: AuthContextValue = {
     session,
+    profile,
     loading,
+    profileLoading,
     signIn,
     signOut,
   };
