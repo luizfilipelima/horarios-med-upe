@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GraduationCap, ArrowLeft, Plus, Settings, Link2, Copy, Check, LifeBuoy, ClipboardList, LogOut, Loader2 } from 'lucide-react';
+import { GraduationCap, Plus, Settings, Link2, Copy, Check, LifeBuoy, ClipboardList, LogOut, Loader2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { useTurma } from '../context/TurmaContext';
-import { useGodMode } from '../context/GodModeContext';
 import { DaySelector } from '../components/DaySelector';
 import { ClassCardEditable } from '../components/ClassCardEditable';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { Footer } from '../components/Footer';
 import { SettingsModal } from '../components/SettingsModal';
 import { ManageEventsModal } from '../components/ManageEventsModal';
 import type { ClassItem } from '../data/schedule';
@@ -36,9 +35,8 @@ export function DelegadoView() {
     groups,
     toast,
   } = useApp();
-  const { signOut, profile } = useAuth();
+  const { signOut } = useAuth();
   const { slug } = useTurma();
-  const { godModeTurmaId, exitGodMode } = useGodMode();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [eventsModalOpen, setEventsModalOpen] = useState(false);
@@ -97,24 +95,6 @@ export function DelegadoView() {
       >
         <div className="flex items-center justify-between gap-3 mb-1">
           <div className="flex items-center gap-3">
-            {(profile?.role === 'ceo' && godModeTurmaId) ? (
-              <Link
-                to="/admin"
-                onClick={() => exitGodMode()}
-                className="p-2 rounded-2xl bg-white dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
-                aria-label="Sair do Modo Deus"
-              >
-                <ArrowLeft size={20} strokeWidth={2} />
-              </Link>
-            ) : (
-              <Link
-                to="/login"
-                className="p-2 rounded-2xl bg-white dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
-                aria-label="Voltar"
-              >
-                <ArrowLeft size={20} strokeWidth={2} />
-              </Link>
-            )}
             <div className="w-9 h-9 rounded-2xl bg-indigo-500 flex items-center justify-center shadow-md shadow-indigo-200 dark:shadow-indigo-950">
               <GraduationCap size={18} className="text-white" strokeWidth={2} />
             </div>
@@ -267,6 +247,8 @@ export function DelegadoView() {
           </>
         )}
       </div>
+
+      <Footer />
     </div>
   );
 }

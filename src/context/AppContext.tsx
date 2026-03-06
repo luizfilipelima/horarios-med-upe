@@ -151,6 +151,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     let cancelled = false;
     setLoadingInitial(true);
+    // Reset config para não exibir dados da turma anterior enquanto carrega
+    setTituloPrincipalState('');
+    setSubtituloState('');
+    setGroupsState([]);
 
     async function load() {
       try {
@@ -181,13 +185,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (c.array_de_grupos != null && Array.isArray(c.array_de_grupos))
             setGroupsState(c.array_de_grupos);
         } else {
-          setTituloPrincipalState(defaultConfig.titulo);
-          setSubtituloState(defaultConfig.subtitulo);
+          // Turma sem config: usar valores neutros, não da primeira turma
+          setTituloPrincipalState('');
+          setSubtituloState('');
           setGoogleDriveUrlState(defaultConfig.link_drive);
           setPlatformUrlState(defaultConfig.link_plataforma);
-          setShowSaturdayState(defaultConfig.ativar_sabado);
-          setShowSundayState(defaultConfig.ativar_domingo);
-          setGroupsState(defaultConfig.array_de_grupos);
+          setShowSaturdayState(false);
+          setShowSundayState(false);
+          setGroupsState([]);
         }
 
         const scheduleFromAulas = createEmptySchedule();

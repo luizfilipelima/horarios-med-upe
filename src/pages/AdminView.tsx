@@ -19,6 +19,7 @@ import { useAuth } from '../context/AuthContext';
 import { useGodMode } from '../context/GodModeContext';
 import { supabaseClient } from '../lib/supabase';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { Footer } from '../components/Footer';
 import { EditTurmaModal } from '../components/EditTurmaModal';
 
 interface Turma {
@@ -58,14 +59,18 @@ export function AdminView() {
   const loadData = async () => {
     setLoading(true);
     const [turmasRes, perfisRes, aulasRes, eventosRes] = await Promise.all([
-      supabaseClient.from('turmas').select('id, nome, faculdade, slug_url, created_at, ativa').order('created_at', { ascending: false }),
+      supabaseClient.from('turmas').select('id, nome, faculdade, slug_url, created_at').order('created_at', { ascending: false }),
       supabaseClient.from('perfis').select('id, role').eq('role', 'delegado'),
       supabaseClient.from('aulas').select('id', { count: 'exact', head: true }),
       supabaseClient.from('eventos').select('id', { count: 'exact', head: true }),
     ]);
-    setTurmas((turmasRes.data as Turma[]) ?? []);
+    if (turmasRes.error) {
+      console.error('Erro ao carregar turmas:', turmasRes.error);
+    }
+    const turmasData = (turmasRes.data ?? []) as Turma[];
+    setTurmas(turmasData);
     setKpi({
-      turmas: (turmasRes.data?.length ?? 0),
+      turmas: turmasData.length,
       delegados: (perfisRes.data?.length ?? 0),
       aulas: aulasRes.count ?? 0,
       eventos: eventosRes.count ?? 0,
@@ -420,6 +425,8 @@ export function AdminView() {
         onClose={() => setEditModalTurma(null)}
         onSuccess={loadData}
       />
+
+      <Footer />
     </div>
   );
 }

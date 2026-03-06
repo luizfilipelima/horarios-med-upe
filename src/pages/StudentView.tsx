@@ -5,6 +5,7 @@ import { useApp } from '../context/AppContext';
 import { DaySelector } from '../components/DaySelector';
 import { ScheduleList } from '../components/ScheduleList';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { Footer } from '../components/Footer';
 import { StudentMenuModal } from '../components/StudentMenuModal';
 import { EventsTimelineModal } from '../components/EventsTimelineModal';
 import { FILTER_TODOS } from '../components/GroupFilter';
@@ -127,9 +128,11 @@ export function StudentView() {
       </div>
 
       {/* Cards de Aula */}
-      <div className="px-5 pb-10">
+      <div className="px-5 pb-6">
         <ScheduleList day={selectedDay} selectedGroupFilter={selectedGroupFilter} />
       </div>
+
+      <Footer />
     </div>
   );
 }
