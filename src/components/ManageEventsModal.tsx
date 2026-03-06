@@ -164,8 +164,8 @@ export function ManageEventsModal({ isOpen, onClose }: ManageEventsModalProps) {
                     >
                       {savingMessage ? (
                         <>
-                          <Loader2 size={18} strokeWidth={2} className="animate-spin" />
-                          {savingMessage}
+                          <Loader2 size={18} strokeWidth={2} className="animate-spin flex-shrink-0" />
+                          Adicionar evento
                         </>
                       ) : (
                         <>

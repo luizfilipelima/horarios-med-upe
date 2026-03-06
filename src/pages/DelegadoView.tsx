@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { GraduationCap, ArrowLeft, Plus, Settings, Link2, Copy, Check, LifeBuoy, ClipboardList, LogOut } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { GraduationCap, ArrowLeft, Plus, Settings, Link2, Copy, Check, LifeBuoy, ClipboardList, LogOut, Loader2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { useTurma } from '../context/TurmaContext';
@@ -26,6 +26,7 @@ export function DelegadoView() {
   const {
     visibleDays,
     schedule,
+    loadingInitial,
     tituloPrincipal,
     subtitulo,
     updateClass,
@@ -33,7 +34,7 @@ export function DelegadoView() {
     removeClass,
     getInitialDayId,
     groups,
-    savingMessage,
+    toast,
   } = useApp();
   const { signOut, profile } = useAuth();
   const { slug } = useTurma();
@@ -121,8 +122,8 @@ export function DelegadoView() {
               <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">
                 {tituloPrincipal} — Edición
               </h1>
-              <p className="text-sm font-medium text-gray-400 dark:text-zinc-500">
-                {savingMessage ?? subtitulo}
+              <p className="text-sm font-medium text-gray-500 dark:text-zinc-500">
+                {subtitulo}
               </p>
             </div>
           </div>
@@ -141,16 +142,16 @@ export function DelegadoView() {
           </div>
         </div>
 
-        {/* Botões de ação globais — Soft UI, grid responsivo */}
+        {/* Botões de ação globais — alto contraste modo claro */}
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-[1.35fr_0.65fr] gap-3 mb-6">
-          <div className="h-12 rounded-2xl flex items-stretch overflow-hidden bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-all duration-200">
+          <div className="h-12 rounded-2xl flex items-stretch overflow-hidden bg-white dark:bg-indigo-500/10 border border-indigo-200 dark:border-transparent hover:bg-indigo-50 dark:hover:bg-indigo-500/20 transition-all duration-200 shadow-sm dark:shadow-none">
             <motion.a
               href={schedulePageUrl}
               target="_blank"
               rel="noopener noreferrer"
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
-              className="flex-1 min-w-0 flex items-center justify-center gap-2 text-indigo-700 dark:text-indigo-400 font-medium text-sm"
+              className="flex-1 min-w-0 flex items-center justify-center gap-2 text-indigo-800 dark:text-indigo-400 font-semibold text-sm"
             >
               <Link2 size={18} strokeWidth={2} className="shrink-0" />
               <span className="truncate">Minha Gradly</span>
@@ -161,12 +162,12 @@ export function DelegadoView() {
               aria-label={linkCopied ? 'Link copiado' : 'Copiar link'}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="shrink-0 flex items-center justify-center w-11 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100/80 dark:hover:bg-indigo-500/30 transition-colors border-l border-indigo-200/60 dark:border-indigo-400/20"
+              className="shrink-0 flex items-center justify-center w-11 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/30 transition-colors border-l border-indigo-200 dark:border-indigo-400/20"
             >
               {linkCopied ? (
                 <Check size={18} strokeWidth={2} />
               ) : (
-                <Copy size={18} strokeWidth={2} className="opacity-80" />
+                <Copy size={18} strokeWidth={2} className="opacity-90" />
               )}
             </motion.button>
           </div>
@@ -176,7 +177,7 @@ export function DelegadoView() {
             onClick={() => setSettingsOpen(true)}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="h-12 rounded-2xl px-4 flex items-center justify-center gap-2 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-zinc-800/80 dark:text-zinc-300 dark:hover:bg-zinc-700/80 font-medium text-sm transition-all duration-200"
+            className="h-12 rounded-2xl px-4 flex items-center justify-center gap-2 bg-white dark:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-700/80 font-medium text-sm transition-all duration-200 shadow-sm dark:shadow-none"
           >
             <Settings size={18} strokeWidth={2} className="shrink-0" />
             <span className="truncate">Ajustes</span>
@@ -187,7 +188,7 @@ export function DelegadoView() {
             onClick={() => setEventsModalOpen(true)}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="h-12 rounded-2xl px-4 flex items-center justify-center gap-2 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-zinc-800/80 dark:text-zinc-300 dark:hover:bg-zinc-700/80 font-medium text-sm transition-all duration-200 sm:col-span-2"
+            className="h-12 rounded-2xl px-4 flex items-center justify-center gap-2 bg-white dark:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-700/80 font-medium text-sm transition-all duration-200 sm:col-span-2 shadow-sm dark:shadow-none"
           >
             <ClipboardList size={18} strokeWidth={2} className="shrink-0" />
             <span className="truncate">Gerenciar Avaliações</span>
@@ -199,7 +200,7 @@ export function DelegadoView() {
             rel="noopener noreferrer"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="h-12 rounded-2xl px-4 flex items-center justify-center gap-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20 font-medium text-sm transition-all duration-200 sm:col-span-2"
+            className="h-12 rounded-2xl px-4 flex items-center justify-center gap-2 bg-white dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-transparent hover:bg-emerald-50 dark:hover:bg-emerald-500/20 font-semibold text-sm transition-all duration-200 sm:col-span-2 shadow-sm dark:shadow-none"
           >
             <LifeBuoy size={18} strokeWidth={2} className="shrink-0" />
             <span className="truncate">Falar com Suporte</span>
@@ -209,6 +210,21 @@ export function DelegadoView() {
 
       <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <ManageEventsModal isOpen={eventsModalOpen} onClose={() => setEventsModalOpen(false)} />
+
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            key="toast"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-2xl bg-zinc-800 dark:bg-zinc-700 text-white text-sm font-medium shadow-lg max-w-[90vw]"
+          >
+            {toast}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Seletor de Dias — mesmo respiro da página do aluno (mb-5) */}
       <div className="px-5 mb-5">
@@ -221,6 +237,13 @@ export function DelegadoView() {
       </div>
 
       <div className="px-5 pb-10 flex flex-col gap-3">
+        {loadingInitial ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3">
+            <Loader2 size={28} className="animate-spin text-indigo-500" strokeWidth={2} />
+            <span className="text-sm text-gray-500 dark:text-zinc-500">Carregando horários...</span>
+          </div>
+        ) : (
+          <>
         {classes.map((cls, i) => (
           <ClassCardEditable
             key={`${selectedDay?.id}-${i}`}
@@ -241,6 +264,8 @@ export function DelegadoView() {
           <Plus size={20} strokeWidth={2} />
           <span className="text-sm font-semibold">Adicionar Nueva Materia</span>
         </motion.button>
+          </>
+        )}
       </div>
     </div>
   );

@@ -4,11 +4,11 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
 import {
-  initialScheduleWithWeekend,
   getInitialDayId,
   createEmptySchedule,
   type ClassItem,
@@ -50,6 +50,8 @@ interface AppContextValue extends AppState {
   visibleDays: DaySchedule[];
   loadingInitial: boolean;
   savingMessage: string | null;
+  toast: string | null;
+  showToast: (message: string) => void;
   setTituloPrincipal: (v: string) => void;
   setSubtitulo: (v: string) => void;
   setGoogleDriveUrl: (url: string) => void;
@@ -115,7 +117,7 @@ function mapClassItemToAulaRow(dayId: string, c: ClassItem) {
 export function AppProvider({ children }: { children: ReactNode }) {
   const { turmaId } = useTurma();
 
-  const [schedule, setSchedule] = useState<DaySchedule[]>(initialScheduleWithWeekend);
+  const [schedule, setSchedule] = useState<DaySchedule[]>(() => createEmptySchedule());
   const [tituloPrincipal, setTituloPrincipalState] = useState(() => defaultConfig.titulo);
   const [subtitulo, setSubtituloState] = useState(() => defaultConfig.subtitulo);
   const [googleDriveUrl, setGoogleDriveUrlState] = useState(() => defaultConfig.link_drive);
@@ -126,9 +128,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [eventos, setEventosState] = useState<EventoItem[]>(() => []);
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [savingMessage, setSavingMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const setSaving = useCallback((msg: string | null) => {
     setSavingMessage(msg);
+  }, []);
+
+  const showToast = useCallback((message: string) => {
+    if (toastRef.current) clearTimeout(toastRef.current);
+    setToast(message);
+    toastRef.current = setTimeout(() => {
+      setToast(null);
+      toastRef.current = null;
+    }, 4000);
   }, []);
 
   useEffect(() => {
@@ -425,47 +438,64 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const addClass = useCallback(
     async (dayId: string, classItem: ClassItem) => {
-      if (SUPABASE_ENABLED && turmaId) {
-        setSaving('Salvando...');
-        const row = { ...mapClassItemToAulaRow(dayId, classItem), turma_id: turmaId };
-        const { data, error } = await supabaseClient.from('aulas').insert(row).select('id').single();
-        setSaving(null);
-        if (!error && data) {
-          setSchedule((prev) =>
-            prev.map((d) =>
-              d.id === dayId
-                ? { ...d, classes: [...d.classes, { ...classItem, id: data.id }] }
-                : d
-            )
-          );
-          return;
-        }
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      const optimisticItem = { ...classItem, id: tempId };
+      setSchedule((prev) =>
+        prev.map((d) =>
+          d.id === dayId ? { ...d, classes: [...d.classes, optimisticItem] } : d
+        )
+      );
+      if (!SUPABASE_ENABLED || !turmaId) return;
+      const row = { ...mapClassItemToAulaRow(dayId, classItem), turma_id: turmaId };
+      const { data, error } = await supabaseClient.from('aulas').insert(row).select('id').single();
+      if (error) {
+        setSchedule((prev) =>
+          prev.map((d) =>
+            d.id === dayId ? { ...d, classes: d.classes.filter((c) => c.id !== tempId) } : d
+          )
+        );
+        showToast('Falha ao adicionar. Tente novamente.');
+        return;
       }
       setSchedule((prev) =>
         prev.map((d) =>
-          d.id === dayId ? { ...d, classes: [...d.classes, classItem] } : d
+          d.id === dayId
+            ? {
+                ...d,
+                classes: d.classes.map((c) => (c.id === tempId ? { ...c, id: data.id } : c)),
+              }
+            : d
         )
       );
     },
-    [turmaId]
+    [turmaId, showToast]
   );
 
   const removeClass = useCallback(
     async (dayId: string, index: number) => {
       const day = schedule.find((d) => d.id === dayId);
       const cls = day?.classes[index];
-      if (SUPABASE_ENABLED && turmaId && cls?.id) {
-        setSaving('Salvando...');
-        await supabaseClient.from('aulas').delete().eq('id', cls.id).eq('turma_id', turmaId);
-        setSaving(null);
-      }
+      const removed = cls ? { ...cls } : null;
       setSchedule((prev) =>
         prev.map((d) =>
           d.id === dayId ? { ...d, classes: d.classes.filter((_, i) => i !== index) } : d
         )
       );
+      if (!SUPABASE_ENABLED || !turmaId || !removed?.id || String(removed.id).startsWith('temp-')) return;
+      const { error } = await supabaseClient.from('aulas').delete().eq('id', removed.id).eq('turma_id', turmaId);
+      if (error) {
+        setSchedule((prev) =>
+          prev.map((d) => {
+            if (d.id !== dayId) return d;
+            const next = [...d.classes];
+            next.splice(index, 0, removed);
+            return { ...d, classes: next };
+          })
+        );
+        showToast('Falha ao excluir. Tente novamente.');
+      }
     },
-    [schedule, turmaId]
+    [schedule, turmaId, showToast]
   );
 
   const updateClass = useCallback(
@@ -473,22 +503,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const day = schedule.find((d) => d.id === dayId);
       const current = day?.classes[index];
       if (!current) return;
-
-      if (SUPABASE_ENABLED && turmaId && current.id) {
-        setSaving('Salvando...');
-        const row: Record<string, unknown> = {};
-        if (classItem.subject != null) row.materia = classItem.subject;
-        if (classItem.time != null) row.horario = classItem.time;
-        if (classItem.location != null) row.sala = classItem.location;
-        if (classItem.professor != null) row.professor = classItem.professor;
-        if (classItem.type != null) row.tipo = classItem.type;
-        if (classItem.grupoAlvo != null) row.grupo_alvo = classItem.grupoAlvo;
-        if (Object.keys(row).length > 0) {
-          await supabaseClient.from('aulas').update(row).eq('id', current.id).eq('turma_id', turmaId);
-        }
-        setSaving(null);
-      }
-
+      const previous = { ...current };
       setSchedule((prev) =>
         prev.map((d) => {
           if (d.id !== dayId) return d;
@@ -497,8 +512,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
           return { ...d, classes: next };
         })
       );
+      if (!SUPABASE_ENABLED || !turmaId || !current.id || String(current.id).startsWith('temp-')) return;
+      const row: Record<string, unknown> = {};
+      if (classItem.subject != null) row.materia = classItem.subject;
+      if (classItem.time != null) row.horario = classItem.time;
+      if (classItem.location != null) row.sala = classItem.location;
+      if (classItem.professor != null) row.professor = classItem.professor;
+      if (classItem.type != null) row.tipo = classItem.type;
+      if (classItem.grupoAlvo != null) row.grupo_alvo = classItem.grupoAlvo;
+      if (Object.keys(row).length === 0) return;
+      const { error } = await supabaseClient.from('aulas').update(row).eq('id', current.id).eq('turma_id', turmaId);
+      if (error) {
+        setSchedule((prev) =>
+          prev.map((d) => {
+            if (d.id !== dayId) return d;
+            const next = [...d.classes];
+            if (next[index]) next[index] = previous;
+            return { ...d, classes: next };
+          })
+        );
+        showToast('Falha ao salvar. Tente novamente.');
+      }
     },
-    [schedule, turmaId]
+    [schedule, turmaId, showToast]
   );
 
   const saveConfig = useCallback(async () => {
@@ -519,6 +555,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       visibleDays,
       loadingInitial,
       savingMessage,
+      toast,
+      showToast,
       setTituloPrincipal,
       setSubtitulo,
       setGoogleDriveUrl,
@@ -549,6 +587,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       visibleDays,
       loadingInitial,
       savingMessage,
+      toast,
+      showToast,
       setTituloPrincipal,
       setSubtitulo,
       setGoogleDriveUrl,
@@ -563,6 +603,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addClass,
       removeClass,
       updateClass,
+      getInitialDayId,
       saveConfig,
     ]
   );

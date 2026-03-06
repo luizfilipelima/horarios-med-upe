@@ -203,8 +203,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 >
                   {savingMessage ? (
                     <>
-                      <Loader2 size={18} strokeWidth={2.5} className="animate-spin" />
-                      {savingMessage}
+                      <Loader2 size={18} strokeWidth={2.5} className="animate-spin flex-shrink-0" />
+                      Salvar
                     </>
                   ) : (
                     <>

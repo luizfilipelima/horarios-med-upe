@@ -15,33 +15,33 @@ const typeConfig: Record<ClassType, { label: string; bg: string; border: string;
   teoria: {
     label: 'Teoria',
     bg: 'bg-sky-50 dark:bg-sky-500/10',
-    border: 'border-sky-100 dark:border-sky-500/20',
+    border: 'border-sky-200 dark:border-sky-500/20',
     tag: 'bg-sky-100 dark:bg-sky-500/20',
-    tagText: 'text-sky-600 dark:text-sky-400',
+    tagText: 'text-sky-800 dark:text-sky-400',
     icon: <BookOpen size={12} strokeWidth={2.5} />,
   },
   simulacion: {
     label: 'Simulación',
     bg: 'bg-violet-50 dark:bg-violet-500/10',
-    border: 'border-violet-100 dark:border-violet-500/20',
+    border: 'border-violet-200 dark:border-violet-500/20',
     tag: 'bg-violet-100 dark:bg-violet-500/20',
-    tagText: 'text-violet-600 dark:text-violet-400',
+    tagText: 'text-violet-800 dark:text-violet-400',
     icon: <FlaskConical size={12} strokeWidth={2.5} />,
   },
   virtual: {
     label: 'Virtual',
     bg: 'bg-emerald-50 dark:bg-emerald-500/10',
-    border: 'border-emerald-100 dark:border-emerald-500/20',
+    border: 'border-emerald-200 dark:border-emerald-500/20',
     tag: 'bg-emerald-100 dark:bg-emerald-500/20',
-    tagText: 'text-emerald-600 dark:text-emerald-400',
+    tagText: 'text-emerald-800 dark:text-emerald-400',
     icon: <Wifi size={12} strokeWidth={2.5} />,
   },
   practica: {
     label: 'Prática',
     bg: 'bg-amber-50 dark:bg-amber-500/10',
-    border: 'border-amber-100 dark:border-amber-500/20',
+    border: 'border-amber-200 dark:border-amber-500/20',
     tag: 'bg-amber-100 dark:bg-amber-500/20',
-    tagText: 'text-amber-600 dark:text-amber-400',
+    tagText: 'text-amber-800 dark:text-amber-400',
     icon: <Stethoscope size={12} strokeWidth={2.5} />,
   },
 };
@@ -101,7 +101,7 @@ export function ClassCardEditable({ item, index, groups, onUpdate, onRemove }: C
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
-          <Clock size={14} strokeWidth={2} className="flex-shrink-0 text-gray-500 dark:text-zinc-500" />
+          <Clock size={14} strokeWidth={2} className="flex-shrink-0 text-gray-600 dark:text-zinc-500" />
           <input
             type="text"
             value={item.time}
@@ -111,7 +111,7 @@ export function ClassCardEditable({ item, index, groups, onUpdate, onRemove }: C
           />
         </div>
         <div className="flex items-center gap-2">
-          <MapPin size={14} strokeWidth={2} className="flex-shrink-0 text-gray-500 dark:text-zinc-500" />
+          <MapPin size={14} strokeWidth={2} className="flex-shrink-0 text-gray-600 dark:text-zinc-500" />
           <input
             type="text"
             value={item.location}
@@ -121,7 +121,7 @@ export function ClassCardEditable({ item, index, groups, onUpdate, onRemove }: C
           />
         </div>
         <div className="flex items-center gap-2">
-          <User size={14} strokeWidth={2} className="flex-shrink-0 text-gray-500 dark:text-zinc-500" />
+          <User size={14} strokeWidth={2} className="flex-shrink-0 text-gray-600 dark:text-zinc-500" />
           <input
             type="text"
             value={item.professor}
@@ -131,11 +131,11 @@ export function ClassCardEditable({ item, index, groups, onUpdate, onRemove }: C
           />
         </div>
         <div className="pt-1 border-t border-gray-200/80 dark:border-zinc-700/60">
-          <label className="block text-xs font-semibold text-gray-500 dark:text-zinc-500 mb-1.5">
+          <label className="block text-xs font-semibold text-gray-600 dark:text-zinc-500 mb-1.5">
             Grupo alvo (só delegado)
           </label>
           <div className="flex items-center gap-2">
-            <Users size={14} strokeWidth={2} className="flex-shrink-0 text-gray-500 dark:text-zinc-500" />
+            <Users size={14} strokeWidth={2} className="flex-shrink-0 text-gray-600 dark:text-zinc-500" />
             <select
               value={grupoValue}
               onChange={(e) => onUpdate('grupoAlvo', e.target.value)}
