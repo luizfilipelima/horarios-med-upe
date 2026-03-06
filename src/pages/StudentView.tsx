@@ -41,6 +41,27 @@ export function StudentView() {
     }
   }, [groups, selectedGroupFilter]);
 
+  // Título da página e meta tags para aba e compartilhamento (ex.: WhatsApp)
+  useEffect(() => {
+    if (loadingInitial || !tituloPrincipal) return;
+    const title = tituloPrincipal.trim() ? `${tituloPrincipal} | Gradly` : 'Gradly';
+    document.title = title;
+
+    const setMeta = (selector: string, attr: string, value: string) => {
+      const el = document.querySelector(selector);
+      if (el) el.setAttribute(attr, value);
+    };
+    setMeta('meta[property="og:title"]', 'content', tituloPrincipal.trim() || 'Gradly');
+    setMeta('meta[name="twitter:title"]', 'content', tituloPrincipal.trim() || 'Gradly');
+    setMeta('meta[property="og:url"]', 'content', window.location.href);
+    setMeta('meta[name="description"]', 'content', subtitulo?.trim() ? `${tituloPrincipal} – ${subtitulo}` : `Gradly – ${tituloPrincipal}`);
+    setMeta('meta[property="og:description"]', 'content', subtitulo?.trim() ? `${tituloPrincipal} – ${subtitulo}` : `Gradly – ${tituloPrincipal}`);
+
+    return () => {
+      document.title = 'Gradly';
+    };
+  }, [loadingInitial, tituloPrincipal, subtitulo]);
+
   const handleExportCalendar = () => {
     const count = countExportableClasses(visibleDays, selectedGroupFilter);
     if (count === 0) {
