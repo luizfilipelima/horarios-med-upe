@@ -1,9 +1,19 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+const SITE_URL = process.env.VITE_SITE_URL || ''
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: 'html-inject-site-url',
+      transformIndexHtml(html) {
+        return html.replace(/\{\{SITE_URL\}\}/g, SITE_URL)
+      },
+    },
+  ],
   // server aplica-se apenas a `vite dev`; build de produção não inclui HMR nem WebSocket
   server: {
     port: 5173,
