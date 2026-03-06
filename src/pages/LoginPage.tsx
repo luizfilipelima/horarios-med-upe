@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { GraduationCap, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { isSupabaseConfigured, supabaseClient } from '../lib/supabase';
 
@@ -120,12 +120,7 @@ export function LoginPage() {
             </p>
           )}
           <div className="flex flex-col items-center mb-8">
-            <div className="w-14 h-14 rounded-2xl bg-indigo-500 flex items-center justify-center shadow-md shadow-indigo-200 dark:shadow-indigo-950 mb-4">
-              <GraduationCap size={28} className="text-white" strokeWidth={2} />
-            </div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100 text-center">
-              Gradly
-            </h1>
+            <img src="/gradly.svg" alt="Gradly" className="h-12 w-auto mb-3 brightness-0 dark:brightness-100 dark:opacity-90" />
             <p className="text-sm text-gray-500 dark:text-zinc-500 mt-1">
               {forgotMode ? 'Recuperação de senha' : 'Faça login para continuar'}
             </p>

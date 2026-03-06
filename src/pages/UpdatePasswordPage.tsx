@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { KeyRound, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabaseClient } from '../lib/supabase';
 import { isSupabaseConfigured } from '../lib/supabase';
@@ -119,9 +119,7 @@ export function UpdatePasswordPage() {
           animate={{ opacity: 1, y: 0 }}
           className="max-w-sm rounded-3xl bg-white dark:bg-zinc-900 p-8 shadow-lg dark:border dark:border-zinc-800 text-center"
         >
-          <div className="w-14 h-14 rounded-2xl bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center mx-auto mb-4">
-            <KeyRound size={28} className="text-zinc-500 dark:text-zinc-400" strokeWidth={2} />
-          </div>
+          <img src="/gradly.svg" alt="Gradly" className="h-12 w-auto mx-auto mb-4 brightness-0 dark:brightness-100 dark:opacity-90" />
           <h1 className="text-lg font-bold text-gray-900 dark:text-zinc-100 mb-2">Link inválido ou expirado</h1>
           <p className="text-sm text-gray-500 dark:text-zinc-500 mb-6">
             Use a opção &quot;Esqueceu sua senha?&quot; na tela de login para receber um novo link.
@@ -147,9 +145,7 @@ export function UpdatePasswordPage() {
           animate={{ opacity: 1, scale: 1 }}
           className="max-w-sm rounded-3xl bg-white dark:bg-zinc-900 p-8 shadow-lg dark:border dark:border-zinc-800 text-center"
         >
-          <div className="w-14 h-14 rounded-2xl bg-emerald-500 flex items-center justify-center mx-auto mb-4">
-            <KeyRound size={28} className="text-white" strokeWidth={2} />
-          </div>
+          <img src="/gradly.svg" alt="Gradly" className="h-12 w-auto mx-auto mb-4 brightness-0 dark:brightness-100 dark:opacity-90" />
           <h1 className="text-lg font-bold text-gray-900 dark:text-zinc-100 mb-2">Senha atualizada com sucesso!</h1>
           <p className="text-sm text-gray-500 dark:text-zinc-500">
             Redirecionando para o login…
@@ -170,9 +166,7 @@ export function UpdatePasswordPage() {
       >
         <div className="rounded-3xl bg-white dark:bg-zinc-900 shadow-lg shadow-gray-200/80 dark:shadow-none dark:border dark:border-zinc-800 overflow-hidden p-8">
           <div className="flex flex-col items-center mb-8">
-            <div className="w-14 h-14 rounded-2xl bg-indigo-500 flex items-center justify-center shadow-md shadow-indigo-200 dark:shadow-indigo-950 mb-4">
-              <KeyRound size={28} className="text-white" strokeWidth={2} />
-            </div>
+            <img src="/gradly.svg" alt="Gradly" className="h-12 w-auto mb-4 brightness-0 dark:brightness-100 dark:opacity-90" />
             <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100 text-center">
               Redefinir Senha
             </h1>
