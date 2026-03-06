@@ -11,6 +11,8 @@ import {
   Eye,
   LogOut,
   Loader2,
+  Link2,
+  Check,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -48,6 +50,7 @@ export function AdminView() {
   const [addFaculdade, setAddFaculdade] = useState('');
   const [addSlug, setAddSlug] = useState('');
   const [addSaving, setAddSaving] = useState(false);
+  const [inviteCopiedId, setInviteCopiedId] = useState<string | null>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -110,6 +113,23 @@ export function AdminView() {
   const handleModoDeus = (turmaId: string) => {
     enterGodMode(turmaId);
     navigate('/delegado');
+  };
+
+  const handleGerarConvite = async (turmaId: string) => {
+    const { data, error } = await supabaseClient
+      .from('convites')
+      .insert({ turma_id: turmaId })
+      .select('token')
+      .single();
+    if (error || !data?.token) return;
+    const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/convite/${data.token}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setInviteCopiedId(turmaId);
+      setTimeout(() => setInviteCopiedId(null), 2500);
+    } catch {
+      setInviteCopiedId(null);
+    }
   };
 
   return (
@@ -220,7 +240,32 @@ export function AdminView() {
                     {t.faculdade} · <span className="font-mono">{t.slug_url}</span>
                   </p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                  <motion.button
+                    type="button"
+                    onClick={() => handleGerarConvite(t.id)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={`flex items-center gap-2 px-3 py-2.5 rounded-2xl font-medium text-sm transition-colors ${
+                      inviteCopiedId === t.id
+                        ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                        : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-zinc-700'
+                    }`}
+                    aria-label={inviteCopiedId === t.id ? 'Link copiado!' : 'Gerar Link de Convite'}
+                    title={inviteCopiedId === t.id ? 'Link copiado!' : 'Gerar Link de Convite'}
+                  >
+                    {inviteCopiedId === t.id ? (
+                      <>
+                        <Check size={18} strokeWidth={2} />
+                        Link copiado!
+                      </>
+                    ) : (
+                      <>
+                        <Link2 size={18} strokeWidth={2} />
+                        Convite
+                      </>
+                    )}
+                  </motion.button>
                   <motion.button
                     type="button"
                     whileHover={{ scale: 1.05 }}

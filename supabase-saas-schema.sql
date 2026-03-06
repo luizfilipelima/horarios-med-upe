@@ -133,9 +133,11 @@ DROP POLICY IF EXISTS "eventos_update_auth" ON eventos;
 DROP POLICY IF EXISTS "eventos_delete_auth" ON eventos;
 
 -- Configuracoes: anon pode ler (app filtra por turma_id após lookup do slug)
+DROP POLICY IF EXISTS "configuracoes_select_anon" ON configuracoes;
 CREATE POLICY "configuracoes_select_anon" ON configuracoes FOR SELECT USING (true);
 
 -- Configuracoes: delegado CRUD apenas na sua turma
+DROP POLICY IF EXISTS "configuracoes_delegado" ON configuracoes;
 CREATE POLICY "configuracoes_delegado" ON configuracoes FOR ALL
   USING (
     turma_id = (SELECT turma_id FROM perfis WHERE id = auth.uid() AND role = 'delegado')
@@ -145,24 +147,88 @@ CREATE POLICY "configuracoes_delegado" ON configuracoes FOR ALL
   );
 
 -- Configuracoes: CEO CRUD em tudo
+DROP POLICY IF EXISTS "configuracoes_ceo" ON configuracoes;
 CREATE POLICY "configuracoes_ceo" ON configuracoes FOR ALL
   USING (EXISTS (SELECT 1 FROM perfis WHERE id = auth.uid() AND role = 'ceo'))
   WITH CHECK (EXISTS (SELECT 1 FROM perfis WHERE id = auth.uid() AND role = 'ceo'));
 
 -- Aulas: mesma lógica
+DROP POLICY IF EXISTS "aulas_select_anon" ON aulas;
 CREATE POLICY "aulas_select_anon" ON aulas FOR SELECT USING (true);
+DROP POLICY IF EXISTS "aulas_delegado" ON aulas;
 CREATE POLICY "aulas_delegado" ON aulas FOR ALL
   USING (turma_id = (SELECT turma_id FROM perfis WHERE id = auth.uid() AND role = 'delegado'))
   WITH CHECK (turma_id = (SELECT turma_id FROM perfis WHERE id = auth.uid() AND role = 'delegado'));
+DROP POLICY IF EXISTS "aulas_ceo" ON aulas;
 CREATE POLICY "aulas_ceo" ON aulas FOR ALL
   USING (EXISTS (SELECT 1 FROM perfis WHERE id = auth.uid() AND role = 'ceo'))
   WITH CHECK (EXISTS (SELECT 1 FROM perfis WHERE id = auth.uid() AND role = 'ceo'));
 
 -- Eventos: mesma lógica
+DROP POLICY IF EXISTS "eventos_select_anon" ON eventos;
 CREATE POLICY "eventos_select_anon" ON eventos FOR SELECT USING (true);
+DROP POLICY IF EXISTS "eventos_delegado" ON eventos;
 CREATE POLICY "eventos_delegado" ON eventos FOR ALL
   USING (turma_id = (SELECT turma_id FROM perfis WHERE id = auth.uid() AND role = 'delegado'))
   WITH CHECK (turma_id = (SELECT turma_id FROM perfis WHERE id = auth.uid() AND role = 'delegado'));
+DROP POLICY IF EXISTS "eventos_ceo" ON eventos;
 CREATE POLICY "eventos_ceo" ON eventos FOR ALL
   USING (EXISTS (SELECT 1 FROM perfis WHERE id = auth.uid() AND role = 'ceo'))
   WITH CHECK (EXISTS (SELECT 1 FROM perfis WHERE id = auth.uid() AND role = 'ceo'));
+
+-- ============================================================
+-- Convites (Magic Link para delegados)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS convites (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  token uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+  turma_id uuid NOT NULL REFERENCES turmas(id) ON DELETE CASCADE,
+  usado boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_convites_token ON convites(token);
+CREATE INDEX IF NOT EXISTS idx_convites_turma ON convites(turma_id);
+
+ALTER TABLE convites ENABLE ROW LEVEL SECURITY;
+
+-- Público (anon): pode ler convite por token (para validar na tela de registro)
+DROP POLICY IF EXISTS "convites_select_anon" ON convites;
+CREATE POLICY "convites_select_anon" ON convites FOR SELECT USING (true);
+
+-- CEO: CRUD completo
+DROP POLICY IF EXISTS "convites_ceo_all" ON convites;
+CREATE POLICY "convites_ceo_all" ON convites FOR ALL
+  USING (EXISTS (SELECT 1 FROM perfis WHERE id = auth.uid() AND role = 'ceo'))
+  WITH CHECK (EXISTS (SELECT 1 FROM perfis WHERE id = auth.uid() AND role = 'ceo'));
+
+-- Autenticado pode atualizar convite (marcar usado) via função aceitar_convite
+DROP POLICY IF EXISTS "convites_update_auth" ON convites;
+CREATE POLICY "convites_update_auth" ON convites FOR UPDATE
+  USING (auth.role() = 'authenticated')
+  WITH CHECK (auth.role() = 'authenticated');
+
+-- Função RPC: vincular novo usuário à turma e marcar convite como usado (evita RLS bloqueando INSERT em perfis)
+CREATE OR REPLACE FUNCTION aceitar_convite(p_token uuid, p_user_id uuid)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_convite convites%ROWTYPE;
+BEGIN
+  IF auth.uid() IS NULL OR auth.uid() != p_user_id THEN
+    RETURN json_build_object('ok', false, 'error', 'Não autorizado');
+  END IF;
+  SELECT * INTO v_convite FROM convites WHERE token = p_token AND usado = false LIMIT 1;
+  IF v_convite.id IS NULL THEN
+    RETURN json_build_object('ok', false, 'error', 'Convite inválido ou já utilizado');
+  END IF;
+  INSERT INTO perfis (id, role, turma_id) VALUES (p_user_id, 'delegado', v_convite.turma_id)
+  ON CONFLICT (id) DO UPDATE SET role = 'delegado', turma_id = v_convite.turma_id;
+  UPDATE convites SET usado = true WHERE id = v_convite.id;
+  RETURN json_build_object('ok', true);
+END;
+$$;
