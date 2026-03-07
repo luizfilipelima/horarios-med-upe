@@ -22,7 +22,9 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
--- 2. Trigger: ao criar usuário com metadata de onboarding, inserir perfil pendente
+-- 2. Trigger: ao criar usuário com metadata de onboarding, inserir/atualizar perfil pendente
+-- IMPORTANTE: turma_id = NULL — delegado só recebe turma ao ser aprovado (sua própria turma/slug)
+-- ON CONFLICT garante que, se outro trigger criou o perfil antes, sobrescrevemos com dados corretos
 CREATE OR REPLACE FUNCTION public.handle_new_user_onboarding()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -32,16 +34,24 @@ AS $$
 BEGIN
   -- Apenas para signup via cadastro (tem onboarding = true no metadata)
   IF COALESCE(NEW.raw_user_meta_data->>'onboarding', '') = 'true' THEN
-    INSERT INTO perfis (id, role, status, whatsapp, nome_turma, slug_desejado, nome_completo)
+    INSERT INTO perfis (id, role, turma_id, status, whatsapp, nome_turma, slug_desejado, nome_completo)
     VALUES (
       NEW.id,
       'delegado',
+      NULL,
       'pendente',
       NEW.raw_user_meta_data->>'whatsapp',
       NEW.raw_user_meta_data->>'nome_turma',
       NEW.raw_user_meta_data->>'slug_desejado',
       NEW.raw_user_meta_data->>'nome_completo'
-    );
+    )
+    ON CONFLICT (id) DO UPDATE SET
+      turma_id = NULL,
+      status = 'pendente',
+      whatsapp = EXCLUDED.whatsapp,
+      nome_turma = EXCLUDED.nome_turma,
+      slug_desejado = EXCLUDED.slug_desejado,
+      nome_completo = EXCLUDED.nome_completo;
   END IF;
   RETURN NEW;
 END;

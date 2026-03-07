@@ -200,34 +200,19 @@ export function ManageEventsModal({ isOpen, onClose }: ManageEventsModalProps) {
                       <label htmlFor="ev-data" className="label-premium">
                         Data
                       </label>
-                      <div className="relative">
-                        <div
-                          className="input-premium flex items-center gap-3 pointer-events-none"
+                      <div className="flex items-center gap-3 input-premium focus-within:ring-2 focus-within:ring-indigo-500/30 focus-within:border-indigo-400 dark:focus-within:border-indigo-500">
+                        <Calendar
+                          size={18}
+                          className="text-slate-400 dark:text-zinc-500 shrink-0"
+                          strokeWidth={2}
                           aria-hidden
-                        >
-                          <Calendar
-                            size={18}
-                            className="text-slate-400 dark:text-zinc-500 shrink-0"
-                            strokeWidth={2}
-                          />
-                          <span
-                            className={
-                              data
-                                ? 'text-slate-900 dark:text-zinc-100'
-                                : 'text-slate-400 dark:text-zinc-500'
-                            }
-                          >
-                            {data
-                              ? formatEventDate(new Date(data + 'T12:00:00').toISOString())
-                              : 'Selecionar data'}
-                          </span>
-                        </div>
+                        />
                         <input
                           id="ev-data"
                           type="date"
                           value={data}
                           onChange={(e) => setData(e.target.value)}
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          className="flex-1 min-w-0 bg-transparent border-0 p-0 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-0 [color-scheme:light] dark:[color-scheme:dark]"
                           aria-label="Selecionar data"
                         />
                       </div>
