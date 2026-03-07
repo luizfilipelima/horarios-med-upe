@@ -146,7 +146,7 @@ export function GerenciarDelegadosModal({ turma, isOpen, onClose, onSuccess }: G
               exit={{ opacity: 0, y: 16 }}
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()}
-              className="pointer-events-auto w-full max-w-md rounded-3xl bg-white dark:bg-zinc-900 shadow-xl dark:border dark:border-zinc-800 overflow-hidden"
+              className="pointer-events-auto w-full max-w-md max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-3xl bg-white dark:bg-zinc-900 shadow-xl dark:border dark:border-zinc-800 overflow-hidden"
             >
               <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-zinc-800">
                 <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100">
@@ -162,7 +162,7 @@ export function GerenciarDelegadosModal({ turma, isOpen, onClose, onSuccess }: G
                 </button>
               </div>
 
-              <div className="px-5 py-5 space-y-5 max-h-[70vh] overflow-y-auto">
+              <div className="flex-1 min-h-0 overflow-y-auto px-5 py-5 space-y-5">
                 <div className="rounded-2xl bg-gray-50 dark:bg-zinc-800/60 p-4 border border-gray-100 dark:border-zinc-700">
                   <p className="font-semibold text-gray-900 dark:text-zinc-100">{turma.nome}</p>
                   <p className="text-sm text-gray-500 dark:text-zinc-500">

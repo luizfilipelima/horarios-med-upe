@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BarChart3,
@@ -61,20 +62,35 @@ export function AdminView() {
   const [editModalTurma, setEditModalTurma] = useState<Turma | null>(null);
   const [delegadosModalTurma, setDelegadosModalTurma] = useState<Turma | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
   const [alunosByTurmaId, setAlunosByTurmaId] = useState<Record<string, number>>({});
   const [toastCopied, setToastCopied] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownContentRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
 
   const [tituloByTurmaId, setTituloByTurmaId] = useState<Record<string, string>>({});
 
+  const handleOpenDropdown = (t: Turma, e: React.MouseEvent<HTMLButtonElement>) => {
+    const btn = e.currentTarget;
+    const rect = btn.getBoundingClientRect();
+    triggerRef.current = btn;
+    setDropdownRect({ top: rect.top, left: rect.left, width: rect.width, height: rect.height });
+    setOpenDropdownId(openDropdownId === t.id ? null : t.id);
+  };
+
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setOpenDropdownId(null);
-      }
+    function handleClickOutside(e: MouseEvent | TouchEvent) {
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target) || dropdownContentRef.current?.contains(target)) return;
+      setOpenDropdownId(null);
+      setDropdownRect(null);
     }
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
 
   const loadData = async () => {
@@ -312,7 +328,7 @@ export function AdminView() {
                   layout
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={`rounded-2xl bg-white dark:bg-white/5 backdrop-blur-md border border-slate-200 dark:border-white/10 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4 ${openDropdownId === t.id ? 'relative z-50' : ''}`}
+                  className="rounded-2xl bg-white dark:bg-white/5 backdrop-blur-md border border-slate-200 dark:border-white/10 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4"
                 >
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-gray-900 dark:text-white truncate">
@@ -348,69 +364,16 @@ export function AdminView() {
                     </motion.button>
 
                     {/* Menu Dropdown - Ações */}
-                    <div className="relative" ref={openDropdownId === t.id ? dropdownRef : undefined}>
-                      <motion.button
-                        type="button"
-                        onClick={() => setOpenDropdownId(openDropdownId === t.id ? null : t.id)}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white transition-colors"
-                        aria-label="Mais opções"
-                      >
-                        <MoreVertical size={20} strokeWidth={2} />
-                      </motion.button>
-
-                      <AnimatePresence>
-                        {openDropdownId === t.id && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -8, scale: 0.96 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -4 }}
-                            className="absolute right-0 top-full mt-2 py-2 w-48 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-xl z-50"
-                          >
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditModalTurma(t);
-                                setOpenDropdownId(null);
-                              }}
-                              className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white"
-                            >
-                              <Pencil size={16} strokeWidth={2} />
-                              Editar
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setDelegadosModalTurma(t);
-                                setOpenDropdownId(null);
-                              }}
-                              className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white"
-                            >
-                              <UserPlus size={16} strokeWidth={2} />
-                              Gerenciar Delegados
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleModoDeus(t.id)}
-                              className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm text-indigo-400 hover:bg-indigo-500/10"
-                            >
-                              <Eye size={16} strokeWidth={2} />
-                              Modo Deus
-                            </button>
-                            <a
-                              href={`/t/${t.slug_url}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="block w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white"
-                            >
-                              <Link2 size={16} strokeWidth={2} />
-                              Abrir turma
-                            </a>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
+                    <motion.button
+                      type="button"
+                      onClick={(e) => handleOpenDropdown(t, e)}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white transition-colors"
+                      aria-label="Mais opções"
+                    >
+                      <MoreVertical size={20} strokeWidth={2} />
+                    </motion.button>
                   </div>
                 </motion.div>
               ))}
@@ -418,6 +381,83 @@ export function AdminView() {
           )}
         </motion.section>
       </main>
+
+      {/* Dropdown em Portal — sempre visível no mobile */}
+      {openDropdownId && dropdownRect && (() => {
+        const t = turmas.find((x) => x.id === openDropdownId);
+        if (!t) return null;
+        const GAP = 8;
+        const DROPDOWN_H = 220;
+        const openAbove = dropdownRect.top + dropdownRect.height + GAP + DROPDOWN_H > window.innerHeight;
+        const top = openAbove
+          ? dropdownRect.top - GAP - DROPDOWN_H
+          : dropdownRect.top + dropdownRect.height + GAP;
+        const right = Math.max(16, window.innerWidth - dropdownRect.left - dropdownRect.width);
+        return createPortal(
+          <AnimatePresence>
+            <motion.div
+              ref={dropdownContentRef}
+              initial={{ opacity: 0, y: openAbove ? 8 : -8, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: openAbove ? -4 : 4 }}
+              transition={{ duration: 0.15 }}
+              className="fixed z-[100] py-2 w-52 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-2xl"
+              style={{
+                top: Math.max(16, Math.min(top, window.innerHeight - DROPDOWN_H - 16)),
+                right,
+                left: 'auto',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setEditModalTurma(t);
+                  setOpenDropdownId(null);
+                  setDropdownRect(null);
+                }}
+                className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white"
+              >
+                <Pencil size={16} strokeWidth={2} />
+                Editar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDelegadosModalTurma(t);
+                  setOpenDropdownId(null);
+                  setDropdownRect(null);
+                }}
+                className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white"
+              >
+                <UserPlus size={16} strokeWidth={2} />
+                Gerenciar Delegados
+              </button>
+              <button
+                type="button"
+                onClick={() => handleModoDeus(t.id)}
+                className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm text-indigo-400 hover:bg-indigo-500/10"
+              >
+                <Eye size={16} strokeWidth={2} />
+                Modo Deus
+              </button>
+              <a
+                href={`/t/${t.slug_url}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => {
+                  setOpenDropdownId(null);
+                  setDropdownRect(null);
+                }}
+                className="block w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white"
+              >
+                <Link2 size={16} strokeWidth={2} />
+                Abrir turma
+              </a>
+            </motion.div>
+          </AnimatePresence>,
+          document.body
+        );
+      })()}
 
       {/* Modal Adicionar Turma */}
       <AnimatePresence>
