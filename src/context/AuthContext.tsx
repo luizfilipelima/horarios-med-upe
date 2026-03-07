@@ -11,10 +11,13 @@ import { supabaseClient } from '../lib/supabase';
 
 export type UserRole = 'ceo' | 'delegado';
 
+export type ProfileStatus = 'pendente' | 'aprovado' | 'rejeitado';
+
 export interface UserProfile {
   id: string;
   role: UserRole;
   turma_id: string | null;
+  status?: ProfileStatus;
 }
 
 interface AuthContextValue {
@@ -33,13 +36,18 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 async function fetchProfile(userId: string): Promise<{ profile: UserProfile | null; error: string | null }> {
   const { data, error } = await supabaseClient
     .from('perfis')
-    .select('id, role, turma_id')
+    .select('id, role, turma_id, status')
     .eq('id', userId)
     .maybeSingle();
   if (error) return { profile: null, error: error.message };
   if (!data) return { profile: null, error: null };
   return {
-    profile: { id: data.id, role: data.role as UserRole, turma_id: data.turma_id },
+    profile: {
+      id: data.id,
+      role: data.role as UserRole,
+      turma_id: data.turma_id,
+      status: (data.status as ProfileStatus) ?? 'aprovado',
+    },
     error: null,
   };
 }

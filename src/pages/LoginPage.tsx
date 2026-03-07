@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -18,6 +18,23 @@ export function LoginPage() {
   const { signIn, signOut, session, profile, profileError, profileLoading } = useAuth();
 
   if (session && !profileLoading) {
+    if (profile?.status === 'pendente') {
+      signOut();
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-zinc-950 px-4 py-8">
+          <div className="max-w-sm rounded-3xl bg-white dark:bg-zinc-900 p-8 shadow-lg dark:border dark:border-zinc-800 text-center">
+            <div className="h-12 w-[158px] mx-auto mb-6 shrink-0 opacity-80" style={{ WebkitMaskImage: "url('/gradly.svg')", maskImage: "url('/gradly.svg')", WebkitMaskSize: 'contain', maskSize: 'contain', WebkitMaskRepeat: 'no-repeat', maskRepeat: 'no-repeat', backgroundColor: '#6366F1' }} role="img" aria-label="Gradly" />
+            <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100 mb-2">Cadastro em análise</h2>
+            <p className="text-sm text-gray-500 dark:text-zinc-400">
+              Seu cadastro foi recebido e está em análise. Avisaremos por e-mail quando for liberado.
+            </p>
+            <Link to="/" className="mt-6 inline-block text-sm font-medium text-indigo-500 dark:text-indigo-400 hover:underline">
+              Voltar à página inicial
+            </Link>
+          </div>
+        </div>
+      );
+    }
     if (profile?.role === 'ceo') return <Navigate to="/admin" replace />;
     if (profile?.role === 'delegado') return <Navigate to="/delegado" replace />;
     if (profile === null) {
@@ -139,6 +156,11 @@ export function LoginPage() {
             <p className="text-sm text-gray-500 dark:text-zinc-500 mt-1">
               {forgotMode ? 'Recuperação de senha' : 'Faça login para continuar'}
             </p>
+            {!forgotMode && (
+              <Link to="/cadastro" className="text-xs text-indigo-500 dark:text-indigo-400 hover:underline mt-1">
+                Não tem conta? Criar conta
+              </Link>
+            )}
             {forgotMode && (
               <p className="text-xs text-gray-500 dark:text-zinc-500 mt-0.5">
                 Informe seu e-mail para receber o link

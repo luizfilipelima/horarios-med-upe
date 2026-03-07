@@ -22,6 +22,7 @@ import { ThemeToggle } from '../components/ThemeToggle';
 import { Footer } from '../components/Footer';
 import { EditTurmaModal } from '../components/EditTurmaModal';
 import { GerenciarDelegadosModal } from '../components/GerenciarDelegadosModal';
+import { SolicitacoesPendentesSection } from '../components/SolicitacoesPendentesSection';
 
 interface Turma {
   id: string;
@@ -65,7 +66,7 @@ export function AdminView() {
     const [turmasRes, configsRes, perfisRes, aulasRes, eventosRes] = await Promise.all([
       supabaseClient.from('turmas').select('id, nome, faculdade, slug_url, created_at').order('created_at', { ascending: false }),
       supabaseClient.from('configuracoes').select('turma_id, titulo'),
-      supabaseClient.from('perfis').select('id, role').eq('role', 'delegado'),
+      supabaseClient.from('perfis').select('id, role, status').eq('role', 'delegado'),
       supabaseClient.from('aulas').select('id', { count: 'exact', head: true }),
       supabaseClient.from('eventos').select('id', { count: 'exact', head: true }),
     ]);
@@ -81,9 +82,12 @@ export function AdminView() {
       }
     }
     setTituloByTurmaId(tituloMap);
+    const delegadosAprovados = (perfisRes.data ?? []).filter(
+      (p: { status?: string }) => p.status !== 'pendente' && p.status !== 'rejeitado'
+    ).length;
     setKpi({
       turmas: turmasData.length,
-      delegados: (perfisRes.data?.length ?? 0),
+      delegados: delegadosAprovados,
       aulas: aulasRes.count ?? 0,
       eventos: eventosRes.count ?? 0,
     });
@@ -215,6 +219,8 @@ export function AdminView() {
           </motion.div>
         ))}
       </motion.section>
+
+      <SolicitacoesPendentesSection onSuccess={loadData} />
 
       {/* Lista de Turmas */}
       <motion.section

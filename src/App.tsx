@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { GodModeProvider } from './context/GodModeContext';
@@ -7,7 +7,10 @@ import { SplashScreenLoader } from './components/SplashScreenLoader';
 
 const loginLoader = () => import('./pages/LoginPage').then(m => ({ default: m.LoginPage }));
 const LoginPage = lazy(loginLoader);
+const LandingPage = lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })));
 const UpdatePasswordPage = lazy(() => import('./pages/UpdatePasswordPage').then(m => ({ default: m.UpdatePasswordPage })));
+const RegisterPage = lazy(() => import('./pages/RegisterPage').then(m => ({ default: m.RegisterPage })));
+const CadastroSucessoPage = lazy(() => import('./pages/CadastroSucessoPage').then(m => ({ default: m.CadastroSucessoPage })));
 const ConvitePage = lazy(() => import('./pages/ConvitePage').then(m => ({ default: m.ConvitePage })));
 const ProtectedAdminRoute = lazy(() => import('./components/ProtectedAdminRoute').then(m => ({ default: m.ProtectedAdminRoute })));
 const ProtectedDelegadoRoute = lazy(() => import('./components/ProtectedDelegadoRoute').then(m => ({ default: m.ProtectedDelegadoRoute })));
@@ -31,8 +34,10 @@ export default function App() {
           <BrowserRouter>
             <Suspense fallback={<RouteFallback />}>
               <Routes>
-                <Route path="/" element={<Navigate to="/login" replace />} />
+                <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/cadastro" element={<RegisterPage />} />
+                <Route path="/cadastro-sucesso" element={<CadastroSucessoPage />} />
                 <Route path="/update-password" element={<UpdatePasswordPage />} />
                 <Route path="/convite/:token" element={<ConvitePage />} />
                 <Route path="/admin" element={<ProtectedAdminRoute />} />
