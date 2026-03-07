@@ -58,6 +58,6 @@ export default function handler(req, res) {
   const startUrl = getStartUrl(req);
   const manifest = { ...baseManifest, start_url: startUrl };
   res.setHeader('Content-Type', 'application/manifest+json');
-  res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=60');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.status(200).json(manifest);
 }

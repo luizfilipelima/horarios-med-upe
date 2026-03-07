@@ -16,6 +16,28 @@ import { InstallPrompt } from '../components/InstallPrompt';
 import { SplashScreenLoader } from '../components/SplashScreenLoader';
 import type { ClassItem } from '../data/schedule';
 import { FILTER_TODOS } from '../components/GroupFilter';
+
+const GRUPO_STORAGE_PREFIX = 'gradly-grupo-';
+
+function getStoredGrupo(slug: string): string | null {
+  try {
+    return localStorage.getItem(GRUPO_STORAGE_PREFIX + slug);
+  } catch {
+    return null;
+  }
+}
+
+function setStoredGrupo(slug: string, grupo: string) {
+  try {
+    if (!grupo || grupo === FILTER_TODOS) {
+      localStorage.removeItem(GRUPO_STORAGE_PREFIX + slug);
+    } else {
+      localStorage.setItem(GRUPO_STORAGE_PREFIX + slug, grupo);
+    }
+  } catch {
+    /* ignore */
+  }
+}
 import { generateICS, downloadICS, countExportableClasses } from '../utils/generateICS';
 import { diasAteEvento } from '../utils/eventos';
 
@@ -42,7 +64,7 @@ export function StudentView() {
   const [isAtBottom, setIsAtBottom] = useState(false);
   const grupoFromUrl = searchParams.get('grupo');
   const [selectedGroupFilter, setSelectedGroupFilterState] = useState<string>(() => {
-    const g = grupoFromUrl ?? '';
+    const g = grupoFromUrl ?? getStoredGrupo(slug ?? '') ?? '';
     if (!g || g === FILTER_TODOS) return FILTER_TODOS;
     return g;
   });
@@ -51,6 +73,7 @@ export function StudentView() {
   const setSelectedGroupFilter = useCallback(
     (value: string) => {
       setSelectedGroupFilterState(value);
+      if (slug) setStoredGrupo(slug, value);
       const base = slug ? `/t/${slug}` : window.location.pathname;
       const url = value !== FILTER_TODOS && value
         ? `${base}?grupo=${encodeURIComponent(value)}`
@@ -66,17 +89,32 @@ export function StudentView() {
     }
   }, [visibleDays, selectedId]);
 
-  // Sincronizar grupo da URL com o state (ex.: ao carregar ou ao voltar)
+  // Sincronizar grupo da URL com o state e localStorage; restaurar grupo salvo quando URL não tem (ex.: PWA abre sem query)
   useEffect(() => {
     const g = searchParams.get('grupo');
-    if (!g || g === FILTER_TODOS) {
-      if (selectedGroupFilter !== FILTER_TODOS) setSelectedGroupFilterState(FILTER_TODOS);
+    if (g && g !== FILTER_TODOS && slug) setStoredGrupo(slug, g);
+    if (g && g !== FILTER_TODOS) {
+      if (groups.length > 0 && groups.includes(g) && selectedGroupFilter !== g) {
+        setSelectedGroupFilterState(g);
+      }
       return;
     }
-    if (groups.length > 0 && groups.includes(g) && selectedGroupFilter !== g) {
-      setSelectedGroupFilterState(g);
+    if (!loadingInitial && slug && groups.length > 0) {
+      const stored = getStoredGrupo(slug);
+      if (stored && groups.includes(stored)) {
+        navigate(`/t/${slug}?grupo=${encodeURIComponent(stored)}`, { replace: true });
+        setSelectedGroupFilterState(stored);
+        return;
+      }
     }
-  }, [searchParams, groups]);
+    // Só resetar para "Todos" quando não há grupo na URL e não há stored para restaurar
+    // (evita reset prematuro: se temos stored e groups ainda não carregou, esperamos; se groups já carregou e stored é inválido, resetamos)
+    const storedForReset = slug ? getStoredGrupo(slug) : null;
+    const waitingToRestore = storedForReset && groups.length === 0;
+    const storedInvalid = storedForReset && groups.length > 0 && !groups.includes(storedForReset);
+    const shouldReset = (!g || g === FILTER_TODOS) && !waitingToRestore && (!storedForReset || storedInvalid) && selectedGroupFilter !== FILTER_TODOS;
+    if (shouldReset) setSelectedGroupFilterState(FILTER_TODOS);
+  }, [searchParams, groups, loadingInitial, slug, navigate, selectedGroupFilter]);
 
   useEffect(() => {
     if (
