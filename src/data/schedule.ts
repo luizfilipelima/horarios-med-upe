@@ -239,6 +239,39 @@ export const DAYS_ORDER: { id: string; label: string; shortLabel: string }[] = [
   { id: 'domingo', label: 'Domingo', shortLabel: 'Dom' },
 ];
 
+export type IdiomaDias = 'pt' | 'es';
+
+const DAYS_LABELS_PT: Record<string, { label: string; shortLabel: string }> = {
+  lunes: { label: 'Segunda', shortLabel: 'Seg' },
+  martes: { label: 'Terça', shortLabel: 'Ter' },
+  miercoles: { label: 'Quarta', shortLabel: 'Qua' },
+  jueves: { label: 'Quinta', shortLabel: 'Qui' },
+  viernes: { label: 'Sexta', shortLabel: 'Sex' },
+  sabado: { label: 'Sábado', shortLabel: 'Sáb' },
+  domingo: { label: 'Domingo', shortLabel: 'Dom' },
+};
+
+const DAYS_LABELS_ES: Record<string, { label: string; shortLabel: string }> = {
+  lunes: { label: 'Lunes', shortLabel: 'Lun' },
+  martes: { label: 'Martes', shortLabel: 'Mar' },
+  miercoles: { label: 'Miércoles', shortLabel: 'Mié' },
+  jueves: { label: 'Jueves', shortLabel: 'Jue' },
+  viernes: { label: 'Viernes', shortLabel: 'Vie' },
+  sabado: { label: 'Sábado', shortLabel: 'Sáb' },
+  domingo: { label: 'Domingo', shortLabel: 'Dom' },
+};
+
+/** Retorna label e shortLabel do dia conforme o idioma */
+export function getDayLabels(dayId: string, idioma: IdiomaDias): { label: string; shortLabel: string } {
+  const map = idioma === 'pt' ? DAYS_LABELS_PT : DAYS_LABELS_ES;
+  return map[dayId] ?? DAYS_ORDER.find((d) => d.id === dayId) ?? { label: dayId, shortLabel: dayId.slice(0, 3) };
+}
+
+/** Aplica labels do idioma aos dias do cronograma */
+export function applyDayLabels<T extends { id: string }>(days: T[], idioma: IdiomaDias): (T & { label: string; shortLabel: string })[] {
+  return days.map((d) => ({ ...d, ...getDayLabels(d.id, idioma) }));
+}
+
 export function getInitialDayId(): string {
   const today = new Date().getDay();
   const map: Record<number, string> = {

@@ -14,9 +14,11 @@ import {
   formatTimeRange,
   removeGroupFromGrupoAlvo,
   parseGruposAlvo,
+  applyDayLabels,
   type ClassItem,
   type DaySchedule,
   type ClassType,
+  type IdiomaDias,
 } from '../data/schedule';
 import { supabaseClient } from '../lib/supabase';
 import { useTurma } from './TurmaContext';
@@ -45,6 +47,7 @@ export interface AppState {
   platformUrl: string;
   showSaturday: boolean;
   showSunday: boolean;
+  idiomaDias: IdiomaDias;
   groups: string[];
   eventos: EventoItem[];
 }
@@ -61,6 +64,7 @@ interface AppContextValue extends AppState {
   setPlatformUrl: (url: string) => void;
   setShowSaturday: (v: boolean) => void;
   setShowSunday: (v: boolean) => void;
+  setIdiomaDias: (v: IdiomaDias) => void;
   addGroup: (name: string) => void;
   removeGroup: (name: string) => void;
   addEvento: (item: Omit<EventoItem, 'id'>) => void;
@@ -154,6 +158,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [platformUrl, setPlatformUrlState] = useState(() => defaultConfig.link_plataforma);
   const [showSaturday, setShowSaturdayState] = useState(defaultConfig.ativar_sabado);
   const [showSunday, setShowSundayState] = useState(defaultConfig.ativar_domingo);
+  const [idiomaDias, setIdiomaDiasState] = useState<IdiomaDias>('es');
   const [groups, setGroupsState] = useState<string[]>(() => defaultConfig.array_de_grupos);
   const [eventos, setEventosState] = useState<EventoItem[]>(() => []);
   const [loadingInitial, setLoadingInitial] = useState(true);
@@ -204,6 +209,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             link_plataforma?: string;
             ativar_sabado?: boolean;
             ativar_domingo?: boolean;
+            idioma_dias?: string;
             array_de_grupos?: string[];
           };
           if (c.titulo != null) setTituloPrincipalState(c.titulo);
@@ -212,16 +218,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (c.link_plataforma != null) setPlatformUrlState(c.link_plataforma);
           if (c.ativar_sabado != null) setShowSaturdayState(c.ativar_sabado);
           if (c.ativar_domingo != null) setShowSundayState(c.ativar_domingo);
+          if (c.idioma_dias === 'pt' || c.idioma_dias === 'es') setIdiomaDiasState(c.idioma_dias);
           if (c.array_de_grupos != null && Array.isArray(c.array_de_grupos))
             setGroupsState(c.array_de_grupos);
         } else {
           // Turma sem config: usar valores neutros, não da primeira turma
           setTituloPrincipalState('');
           setSubtituloState('');
-          setGoogleDriveUrlState(defaultConfig.link_drive);
-          setPlatformUrlState(defaultConfig.link_plataforma);
+          setGoogleDriveUrlState('');
+          setPlatformUrlState('');
           setShowSaturdayState(false);
           setShowSundayState(false);
+          setIdiomaDiasState('es');
           setGroupsState([]);
         }
 
@@ -277,8 +285,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const base = schedule.slice(0, 5);
     if (showSaturday) base.push(schedule[5]!);
     if (showSunday) base.push(schedule[6]!);
-    return base;
-  }, [schedule, showSaturday, showSunday]);
+    return applyDayLabels(base, idiomaDias);
+  }, [schedule, showSaturday, showSunday, idiomaDias]);
 
   const persistConfig = useCallback(async () => {
     if (!SUPABASE_ENABLED || !turmaId) return;
@@ -296,6 +304,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         link_plataforma: platformUrl,
         ativar_sabado: showSaturday,
         ativar_domingo: showSunday,
+        idioma_dias: idiomaDias,
         array_de_grupos: groups,
       }).eq('turma_id', turmaId);
     } else {
@@ -307,6 +316,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         link_plataforma: platformUrl,
         ativar_sabado: showSaturday,
         ativar_domingo: showSunday,
+        idioma_dias: idiomaDias,
         array_de_grupos: groups,
       });
     }
@@ -319,6 +329,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     platformUrl,
     showSaturday,
     showSunday,
+    idiomaDias,
     groups,
   ]);
 
@@ -383,6 +394,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (SUPABASE_ENABLED && turmaId) {
         setSaving('Salvando...');
         supabaseClient.from('configuracoes').update({ ativar_domingo: v }).eq('turma_id', turmaId).then(() => setSaving(null));
+      }
+    },
+    [turmaId]
+  );
+
+  const setIdiomaDias = useCallback(
+    (v: IdiomaDias) => {
+      setIdiomaDiasState(v);
+      if (SUPABASE_ENABLED && turmaId) {
+        setSaving('Salvando...');
+        supabaseClient.from('configuracoes').update({ idioma_dias: v }).eq('turma_id', turmaId).then(() => setSaving(null));
       }
     },
     [turmaId]
@@ -757,6 +779,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       platformUrl,
       showSaturday,
       showSunday,
+      idiomaDias,
       groups,
       eventos,
       visibleDays,
@@ -770,6 +793,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setPlatformUrl,
       setShowSaturday,
       setShowSunday,
+      setIdiomaDias,
       addGroup,
       removeGroup,
       addEvento,
@@ -794,6 +818,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       platformUrl,
       showSaturday,
       showSunday,
+      idiomaDias,
       groups,
       eventos,
       visibleDays,
@@ -807,6 +832,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setPlatformUrl,
       setShowSaturday,
       setShowSunday,
+      setIdiomaDias,
       addGroup,
       removeGroup,
       addEvento,

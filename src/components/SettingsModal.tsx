@@ -21,6 +21,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     platformUrl,
     showSaturday,
     showSunday,
+    idiomaDias,
     groups,
     setTituloPrincipal,
     setSubtitulo,
@@ -28,6 +29,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     setPlatformUrl,
     setShowSaturday,
     setShowSunday,
+    setIdiomaDias,
     addGroup,
     removeGroup,
     savingMessage,
@@ -172,6 +174,33 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                           checked={showSunday}
                           onChange={setShowSunday}
                         />
+                      </div>
+                      <div className="min-h-[44px] flex flex-col sm:flex-row sm:items-center gap-2">
+                        <span className="label-premium sm:mr-2">Idioma dos dias da semana</span>
+                        <div className="flex rounded-2xl bg-slate-100 dark:bg-slate-800/50 p-1 w-fit">
+                          <button
+                            type="button"
+                            onClick={() => setIdiomaDias('pt')}
+                            className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                              idiomaDias === 'pt'
+                                ? 'bg-white dark:bg-zinc-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                                : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+                            }`}
+                          >
+                            Português
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setIdiomaDias('es')}
+                            className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                              idiomaDias === 'es'
+                                ? 'bg-white dark:bg-zinc-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                                : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+                            }`}
+                          >
+                            Español
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>

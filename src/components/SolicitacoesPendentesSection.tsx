@@ -61,10 +61,11 @@ export function SolicitacoesPendentesSection({ onSuccess }: { onSuccess: () => v
         turma_id: newTurma.id,
         titulo: s.nome_turma.trim(),
         subtitulo: '',
-        link_drive: 'https://drive.google.com',
-        link_plataforma: 'https://campus.upe.edu.py:86/moodle/my/courses.php',
+        link_drive: '',
+        link_plataforma: '',
         ativar_sabado: false,
         ativar_domingo: false,
+        idioma_dias: 'es',
         array_de_grupos: ['Grupo 1'],
       });
 
