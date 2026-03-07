@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 
-const SPLASH_MIN_DURATION_MS = 1800; // Garante que a animação do logo (1.5s) seja visível
+const SPLASH_MIN_DURATION_MS = 2800; // Garante animação do logo + tempo para turma e schedule carregarem
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GraduationCap, Menu } from 'lucide-react';

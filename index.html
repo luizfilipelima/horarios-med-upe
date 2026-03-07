@@ -3,7 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="manifest" href="/api/manifest" />
+    <script>
+      (function(){
+        var p = location.pathname + location.search;
+        var start = (p.startsWith('/t/') || p === '/' || p.startsWith('/login')) ? p : '/';
+        var link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = '/api/manifest?start_url=' + encodeURIComponent(start);
+        document.head.appendChild(link);
+      })();
+    </script>
     <link rel="apple-touch-icon" href="/icon-192x192.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#f8f7f5" />
@@ -28,7 +37,7 @@
     <meta name="twitter:image" content="{{SITE_URL}}/og-image.png" />
     <style>
       #root { min-height: 100vh; min-width: 100%; display: flex; align-items: center; justify-content: center; }
-      #root:empty::after { content: 'Carregando…'; color: #6b7280; font-family: system-ui, sans-serif; }
+      #root:empty::after { content: ''; }
     </style>
     <script>
       (function() {

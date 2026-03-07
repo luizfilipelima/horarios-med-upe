@@ -36,9 +36,26 @@ function getStartUrlFromReferer(referer) {
   }
 }
 
+function getStartUrl(req) {
+  try {
+    const url = new URL(req.url || req.originalUrl || '/', 'https://example.com');
+    const s = url.searchParams.get('start_url');
+    if (s && typeof s === 'string') {
+      const t = s.trim();
+      if (t.startsWith('/t/') || t === '/' || t.startsWith('/login')) return t;
+    }
+  } catch (_) {}
+  const q = req?.query || {};
+  if (q.start_url && typeof q.start_url === 'string') {
+    const s = q.start_url.trim();
+    if (s.startsWith('/t/') || s === '/' || s.startsWith('/login')) return s;
+  }
+  const referer = req?.headers?.referer || req?.headers?.referrer;
+  return getStartUrlFromReferer(referer);
+}
+
 export default function handler(req, res) {
-  const referer = req.headers.referer || req.headers.referrer;
-  const startUrl = getStartUrlFromReferer(referer);
+  const startUrl = getStartUrl(req);
   const manifest = { ...baseManifest, start_url: startUrl };
   res.setHeader('Content-Type', 'application/manifest+json');
   res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=60');

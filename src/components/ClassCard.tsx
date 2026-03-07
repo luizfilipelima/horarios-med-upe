@@ -84,7 +84,7 @@ export function ClassCard({ item, index, onClick, isActive = false, innerRef }: 
     initial: 'hidden' as const,
     animate: 'visible' as const,
     transition: { layout: { type: 'spring' as const, stiffness: 350, damping: 30 } },
-    className: `rounded-3xl border p-5 ${config.bg} ${config.border} flex gap-3 text-left w-full ${activeClasses} transition-colors duration-200 hover:bg-black/5 dark:hover:bg-white/5 hover:border-indigo-500/30 dark:hover:border-indigo-500/30`,
+    className: `rounded-3xl border p-5 ${config.bg} ${config.border} flex gap-3 text-left w-full ${activeClasses}`,
   };
 
   const content = (
@@ -132,7 +132,7 @@ export function ClassCard({ item, index, onClick, isActive = false, innerRef }: 
             if (grupos.length === 0) return null;
             return (
               <div className="flex items-start gap-2">
-                <Users size={16} strokeWidth={2} className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
+                <Users size={14} strokeWidth={2} className="flex-shrink-0 text-gray-600 dark:text-zinc-500 mt-0.5" />
                 <div className="flex flex-wrap gap-1.5">
                   {grupos.map((g) => (
                     <span
