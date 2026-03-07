@@ -14,20 +14,43 @@ interface ScheduleListProps {
   onCardClick?: (item: ClassItem) => void;
   /** Se true, faz auto-scroll para o card da aula atual ao montar ou quando mudar o dia */
   scrollToActive?: boolean;
+  /** Direção do swipe: 'left' = próximo dia, 'right' = dia anterior */
+  swipeDirection?: 'left' | 'right' | null;
+  onSwipeAnimationComplete?: () => void;
 }
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1 },
-  exit: { opacity: 0, x: -12, transition: { duration: 0.18 } },
-};
+const SWIPE_OFFSET = 24;
 
 function filterClasses(day: DaySchedule, selectedGroupFilter: string): ClassItem[] {
   if (selectedGroupFilter === FILTER_TODOS) return day.classes;
   return day.classes.filter((c) => isClassForGroup(c.grupoAlvo, selectedGroupFilter));
 }
 
-export function ScheduleList({ day, selectedGroupFilter, onCardClick, scrollToActive = true }: ScheduleListProps) {
+export function ScheduleList({
+  day,
+  selectedGroupFilter,
+  onCardClick,
+  scrollToActive = true,
+  swipeDirection = null,
+  onSwipeAnimationComplete,
+}: ScheduleListProps) {
+  const dir = swipeDirection ?? 'left';
+  const containerVariants = {
+    hidden: {
+      opacity: 0,
+      x: dir === 'left' ? SWIPE_OFFSET : -SWIPE_OFFSET,
+    },
+    visible: {
+      opacity: 1,
+      x: 0,
+      transition: { duration: 0.22, ease: 'easeOut' as const },
+    },
+    exit: {
+      opacity: 0,
+      x: dir === 'left' ? -SWIPE_OFFSET : SWIPE_OFFSET,
+      transition: { duration: 0.18, ease: 'easeOut' as const },
+    },
+  };
   const now = useCurrentTime();
   const activeCardRef = useRef<HTMLElement | null>(null);
 
@@ -51,14 +74,13 @@ export function ScheduleList({ day, selectedGroupFilter, onCardClick, scrollToAc
   }, [shouldScroll, activeIndex, day.id]);
 
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="wait" onExitComplete={onSwipeAnimationComplete}>
       <motion.div
         key={day.id}
         variants={containerVariants}
         initial="hidden"
         animate="visible"
         exit="exit"
-        transition={{ duration: 0.22, ease: 'easeOut' }}
         className="pb-10 flex flex-col gap-3"
       >
         {filteredClasses.length === 0 ? (

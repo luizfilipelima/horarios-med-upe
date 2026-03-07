@@ -16,6 +16,15 @@ export function DaySelector({ days, selectedId, onSelect, layoutId = 'day-pill' 
   const containerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
 
   const updateScrollState = useCallback(() => {
     const el = containerRef.current;
@@ -103,7 +112,7 @@ export function DaySelector({ days, selectedId, onSelect, layoutId = 'day-pill' 
             transition={{ duration: 0.2 }}
             whileHover={{ opacity: 0.9 }}
             whileTap={{ opacity: 0.8 }}
-            className="absolute left-0 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/5 border border-black/5 text-gray-700 dark:bg-white/10 dark:border-white/5 dark:text-zinc-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            className="absolute left-0 top-1/2 z-20 hidden md:flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/5 border border-black/5 text-gray-700 dark:bg-white/10 dark:border-white/5 dark:text-zinc-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
             aria-label="Dias anteriores"
           >
             <ChevronLeft size={20} strokeWidth={2.5} />
@@ -121,7 +130,7 @@ export function DaySelector({ days, selectedId, onSelect, layoutId = 'day-pill' 
             transition={{ duration: 0.2 }}
             whileHover={{ opacity: 0.9 }}
             whileTap={{ opacity: 0.8 }}
-            className="absolute right-0 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/5 border border-black/5 text-gray-700 dark:bg-white/10 dark:border-white/5 dark:text-zinc-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            className="absolute right-0 top-1/2 z-20 hidden md:flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/5 border border-black/5 text-gray-700 dark:bg-white/10 dark:border-white/5 dark:text-zinc-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
             aria-label="Próximos dias"
           >
             <ChevronRight size={20} strokeWidth={2.5} />
@@ -129,31 +138,27 @@ export function DaySelector({ days, selectedId, onSelect, layoutId = 'day-pill' 
         )}
       </AnimatePresence>
 
-      {/* Gradientes de fade — nunca no primeiro dia (esquerda) nem no último (direita) */}
-      {showLeftFade && (
-        <div
-          className="pointer-events-none absolute left-0 top-0 bottom-0 z-10 w-14 bg-gradient-to-r from-[#f8f7f5] to-transparent dark:from-zinc-950"
-          aria-hidden
-        />
-      )}
-      {showRightFade && (
-        <div
-          className="pointer-events-none absolute right-0 top-0 bottom-0 z-10 w-14 bg-gradient-to-l from-[#f8f7f5] to-transparent dark:from-zinc-950"
-          aria-hidden
-        />
-      )}
+      {/* Gradientes de fade — esquerda com opacity-0 quando scrollLeft === 0 */}
+      <div
+        className={`pointer-events-none absolute left-0 top-0 bottom-0 z-10 w-14 bg-gradient-to-r from-[#f8f7f5] to-transparent dark:from-zinc-950 transition-opacity duration-200 ${showLeftFade ? 'opacity-100' : 'opacity-0'}`}
+        aria-hidden
+      />
+      <div
+        className={`pointer-events-none absolute right-0 top-0 bottom-0 z-10 w-14 bg-gradient-to-l from-[#f8f7f5] to-transparent dark:from-zinc-950 transition-opacity duration-200 ${showRightFade ? 'opacity-100' : 'opacity-0'}`}
+        aria-hidden
+      />
 
       {/* Contêiner de scroll — inseta com mx para não ter dias atrás das setas */}
       <div
         ref={containerRef}
         className="flex flex-1 min-w-0 items-center gap-2 overflow-x-auto overflow-y-hidden py-1 scroll-smooth"
         style={{
-          marginLeft: ARROW_ZONE,
-          marginRight: ARROW_ZONE,
+          marginLeft: isDesktop ? ARROW_ZONE : 0,
+          marginRight: isDesktop ? ARROW_ZONE : 0,
+          scrollPaddingInline: isDesktop ? ARROW_ZONE : 0,
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
           WebkitOverflowScrolling: 'touch',
-          scrollPaddingInline: `${ARROW_ZONE}px`,
           ...fadeMask,
         }}
       >

@@ -84,16 +84,6 @@ export function ClassCardEditable({ item, index, groups, canMoveUp, canMoveDown,
           className={`${inputClass} flex-1 min-w-0 font-bold`}
         />
         <div className="flex items-center gap-2 flex-shrink-0">
-          {(() => {
-            const gruposDisplay = parseGruposAlvo(item.grupoAlvo).filter((g) => g !== GRUPO_TODOS);
-            if (gruposDisplay.length === 0) return null;
-            return (
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-100 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 self-center">
-                <Users size={12} strokeWidth={2} />
-                {gruposDisplay.join(', ')}
-              </span>
-            );
-          })()}
           <select
             value={item.type}
             onChange={(e) => onUpdate('type', e.target.value as ClassType)}

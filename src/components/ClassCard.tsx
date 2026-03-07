@@ -101,16 +101,6 @@ export function ClassCard({ item, index, onClick, isActive = false, innerRef }: 
                 Agora
               </span>
             )}
-            {(() => {
-              const grupos = parseGruposAlvo(item.grupoAlvo).filter((g) => g !== GRUPO_TODOS);
-              if (grupos.length === 0) return null;
-              return (
-                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-100 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400">
-                  <Users size={12} strokeWidth={2} />
-                  {grupos.join(', ')}
-                </span>
-              );
-            })()}
             <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${config.tag} ${config.tagText}`}>
               {config.icon}
               {config.label}
@@ -131,6 +121,31 @@ export function ClassCard({ item, index, onClick, isActive = false, innerRef }: 
             <User size={14} strokeWidth={2} className="flex-shrink-0 text-gray-600 dark:text-zinc-500" />
             <span className="text-sm text-gray-400 dark:text-zinc-500 italic">{item.professor}</span>
           </div>
+          {(() => {
+            const raw = item.grupoAlvo;
+            const grupos = (typeof raw === 'string'
+              ? parseGruposAlvo(raw)
+              : Array.isArray(raw)
+                ? (raw as string[]).map((g) => String(g).trim()).filter(Boolean)
+                : []
+            ).filter((g) => g !== GRUPO_TODOS);
+            if (grupos.length === 0) return null;
+            return (
+              <div className="flex items-start gap-2">
+                <Users size={16} strokeWidth={2} className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
+                <div className="flex flex-wrap gap-1.5">
+                  {grupos.map((g) => (
+                    <span
+                      key={g}
+                      className="text-[10px] px-2 py-0.5 rounded-md font-medium bg-slate-100 text-slate-600 dark:bg-slate-700/50 dark:text-slate-300"
+                    >
+                      {g}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
 

@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { GraduationCap, Menu, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { GraduationCap, Menu } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { DaySelector } from '../components/DaySelector';
 import { ScheduleList } from '../components/ScheduleList';
@@ -11,6 +11,7 @@ import { StudentMenuModal } from '../components/StudentMenuModal';
 import { EventsTimelineModal } from '../components/EventsTimelineModal';
 import { SubjectDetailsModal } from '../components/SubjectDetailsModal';
 import { InstallPrompt } from '../components/InstallPrompt';
+import { SplashScreenLoader } from '../components/SplashScreenLoader';
 import type { ClassItem } from '../data/schedule';
 import { FILTER_TODOS } from '../components/GroupFilter';
 import { generateICS, downloadICS, countExportableClasses } from '../utils/generateICS';
@@ -30,6 +31,8 @@ export function StudentView() {
     [eventos]
   );
   const [selectedId, setSelectedId] = useState<string>(() => getInitialDayId());
+  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const grupoFromUrl = searchParams.get('grupo');
   const [selectedGroupFilter, setSelectedGroupFilterState] = useState<string>(() => {
     const g = grupoFromUrl ?? '';
@@ -101,6 +104,44 @@ export function StudentView() {
     };
   }, [loadingInitial, tituloPrincipal, subtitulo]);
 
+  const MIN_SWIPE_DISTANCE = 50;
+
+  const handleDayChangeBySwipe = useCallback(
+    (direction: 'left' | 'right') => {
+      const idx = visibleDays.findIndex((d) => d.id === selectedId);
+      if (idx < 0) return;
+      const nextIdx = direction === 'left' ? idx + 1 : idx - 1;
+      if (nextIdx < 0 || nextIdx >= visibleDays.length) return;
+      setSwipeDirection(direction);
+      setSelectedId(visibleDays[nextIdx].id);
+    },
+    [visibleDays, selectedId]
+  );
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+    };
+  }, []);
+
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      if (!touchStartRef.current) return;
+      const touchEnd = e.changedTouches[0];
+      const deltaX = touchEnd.clientX - touchStartRef.current.x;
+      const deltaY = touchEnd.clientY - touchStartRef.current.y;
+      touchStartRef.current = null;
+
+      if (Math.abs(deltaY) >= Math.abs(deltaX)) return;
+      if (Math.abs(deltaX) < MIN_SWIPE_DISTANCE) return;
+
+      if (deltaX < 0) handleDayChangeBySwipe('left');
+      else handleDayChangeBySwipe('right');
+    },
+    [handleDayChangeBySwipe]
+  );
+
   const handleExportCalendar = () => {
     const count = countExportableClasses(visibleDays, selectedGroupFilter);
     if (count === 0) {
@@ -111,60 +152,60 @@ export function StudentView() {
     downloadICS(ics);
   };
 
-  if (loadingInitial) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f8f7f5] dark:bg-zinc-950 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)]">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex flex-col items-center gap-3"
-        >
-          <Loader2 size={32} className="text-indigo-500 animate-spin" strokeWidth={2} />
-          <span className="text-sm text-gray-500 dark:text-zinc-500">Carregando...</span>
-        </motion.div>
-      </div>
-    );
-  }
+  const bgClasses = 'bg-[#f8f7f5] dark:bg-zinc-950';
 
   return (
+    <>
+    {!loadingInitial && (
     <div
-      className="min-h-screen bg-[#f8f7f5] dark:bg-zinc-950 transition-colors duration-300 max-w-md mx-auto pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)]"
+      className={`flex flex-col h-[100dvh] overflow-hidden ${bgClasses} transition-colors duration-300 max-w-md mx-auto md:h-auto md:min-h-screen md:overflow-visible`}
     >
-      {/* Header: Logo, Títulos, Dark Mode, Menu */}
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
-        className="px-5 pt-6 pb-7"
-      >
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-2xl bg-indigo-500 flex items-center justify-center shadow-md shadow-indigo-200 dark:shadow-indigo-950">
-              <GraduationCap size={18} className="text-white" strokeWidth={2} />
+      {/* Topo fixo: Header + Seletor de Dias */}
+      <div className={`flex-shrink-0 z-20 ${bgClasses} pt-[max(env(safe-area-inset-top),1.5rem)] pb-2`}>
+        <motion.header
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          className="px-5 pt-6 pb-4"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-2xl bg-indigo-500 flex items-center justify-center shadow-md shadow-indigo-200 dark:shadow-indigo-950">
+                <GraduationCap size={18} className="text-white" strokeWidth={2} />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">
+                  {tituloPrincipal}
+                </h1>
+                <p className="text-sm font-medium text-gray-400 dark:text-zinc-500">
+                  {subtitulo}
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">
-                {tituloPrincipal}
-              </h1>
-              <p className="text-sm font-medium text-gray-400 dark:text-zinc-500">
-                {subtitulo}
-              </p>
+            <div className="flex items-center gap-1">
+              <ThemeToggle />
+              <button
+                type="button"
+                onClick={() => setMenuOpen(true)}
+                className="p-2.5 rounded-full text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:text-zinc-400 dark:hover:text-indigo-400 dark:hover:bg-zinc-800 transition-colors"
+                aria-label="Opções"
+                title="Opções"
+              >
+                <Menu size={20} strokeWidth={2} />
+              </button>
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            <ThemeToggle />
-            <button
-              type="button"
-              onClick={() => setMenuOpen(true)}
-              className="p-2.5 rounded-full text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:text-zinc-400 dark:hover:text-indigo-400 dark:hover:bg-zinc-800 transition-colors"
-              aria-label="Opções"
-              title="Opções"
-            >
-              <Menu size={20} strokeWidth={2} />
-            </button>
-          </div>
+        </motion.header>
+
+        {/* Seletor de Dias */}
+        <div className="px-5 mb-4">
+          <DaySelector
+            days={visibleDays}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+          />
         </div>
-      </motion.header>
+      </div>
 
       <StudentMenuModal
         isOpen={menuOpen}
@@ -187,25 +228,44 @@ export function StudentView() {
         eventos={eventos}
       />
 
-      {/* Seletor de Dias */}
-      <div className="px-5 mb-8">
-        <DaySelector
-          days={visibleDays}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
+      {/* Área central rolável com fade nas extremidades */}
+      <div className="relative flex-1 flex flex-col min-h-0 overflow-hidden md:overflow-visible md:min-h-0">
+        {/* Gradiente superior (fade top) */}
+        <div
+          className="absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-[#f8f7f5] to-transparent dark:from-zinc-950 pointer-events-none z-10"
+          aria-hidden
         />
+        {/* Gradiente inferior (fade bottom) */}
+        <div
+          className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-[#f8f7f5] to-transparent dark:from-zinc-950 pointer-events-none z-10"
+          aria-hidden
+        />
+        {/* Contêiner de scroll — cards das matérias + swipe */}
+        <div
+          className="h-full overflow-y-auto px-4 md:px-0 pb-12 pt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          <ScheduleList
+            day={selectedDay}
+            selectedGroupFilter={selectedGroupFilter}
+            onCardClick={(item) => setSelectedSubject(item)}
+            swipeDirection={swipeDirection}
+            onSwipeAnimationComplete={() => setSwipeDirection(null)}
+          />
+        </div>
       </div>
 
-      {/* Cards de Aula */}
-      <div className="px-5 pb-4">
-        <ScheduleList
-          day={selectedDay}
-          selectedGroupFilter={selectedGroupFilter}
-          onCardClick={(item) => setSelectedSubject(item)}
-        />
+      {/* Rodapé fixo */}
+      <div className={`flex-shrink-0 z-20 ${bgClasses} pb-[max(env(safe-area-inset-bottom),1.5rem)] pt-4`}>
+        <Footer />
       </div>
-
-      <Footer />
     </div>
+    )}
+
+    <AnimatePresence>
+      {loadingInitial && <SplashScreenLoader key="splash" />}
+    </AnimatePresence>
+    </>
   );
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, Plus, Pencil, Trash2, ChevronDown, ChevronUp, Users, Copy, Check } from 'lucide-react';
+import { X, Plus, Pencil, Trash2, ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { formatTimeRange, GRUPO_TODOS, parseGruposAlvo, serializeGruposAlvo } from '../data/schedule';
 import type { ClassItem, ClassType } from '../data/schedule';
@@ -595,13 +595,25 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
                                                 {aula.subject || '(Sem nome)'}
                                               </p>
                                               {(() => {
-                                                const grupos = parseGruposAlvo(aula.grupoAlvo).filter((g) => g !== GRUPO_TODOS);
+                                                const raw = aula.grupoAlvo;
+                                                const grupos = (typeof raw === 'string'
+                                                  ? parseGruposAlvo(raw)
+                                                  : Array.isArray(raw)
+                                                    ? (raw as string[]).map((g) => String(g).trim()).filter(Boolean)
+                                                    : []
+                                                ).filter((g) => g !== GRUPO_TODOS);
                                                 if (grupos.length === 0) return null;
                                                 return (
-                                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 shrink-0">
-                                                    <Users size={10} strokeWidth={2} />
-                                                    {grupos.join(', ')}
-                                                  </span>
+                                                  <div className="flex flex-wrap gap-1 shrink-0">
+                                                    {grupos.map((g) => (
+                                                      <span
+                                                        key={g}
+                                                        className="text-[10px] px-2 py-0.5 rounded-md font-medium bg-slate-100 text-slate-600 dark:bg-slate-700/50 dark:text-slate-300"
+                                                      >
+                                                        {g}
+                                                      </span>
+                                                    ))}
+                                                  </div>
                                                 );
                                               })()}
                                             </div>
