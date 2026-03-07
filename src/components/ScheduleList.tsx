@@ -1,14 +1,19 @@
+import { useRef, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CalendarX } from 'lucide-react';
 import type { ClassItem, DaySchedule } from '../data/schedule';
 import { GRUPO_TODOS } from '../data/schedule';
 import { ClassCard } from './ClassCard';
 import { FILTER_TODOS } from './GroupFilter';
+import { useCurrentTime } from '../hooks/useCurrentTime';
+import { isClassActive, getClassHorarios, getTodayDayId } from '../utils/activeClass';
 
 interface ScheduleListProps {
   day: DaySchedule;
   selectedGroupFilter: string;
   onCardClick?: (item: ClassItem) => void;
+  /** Se true, faz auto-scroll para o card da aula atual ao montar ou quando mudar o dia */
+  scrollToActive?: boolean;
 }
 
 const containerVariants = {
@@ -17,15 +22,36 @@ const containerVariants = {
   exit: { opacity: 0, x: -12, transition: { duration: 0.18 } },
 };
 
-function filterClasses(day: DaySchedule, selectedGroupFilter: string) {
+function filterClasses(day: DaySchedule, selectedGroupFilter: string): ClassItem[] {
   if (selectedGroupFilter === FILTER_TODOS) return day.classes;
-  return day.classes.filter(
-    (c) => c.grupoAlvo === GRUPO_TODOS || c.grupoAlvo === selectedGroupFilter
-  );
+  return day.classes.filter((c) => {
+    const grupo = c.grupoAlvo?.trim() || GRUPO_TODOS;
+    return grupo === GRUPO_TODOS || grupo === selectedGroupFilter;
+  });
 }
 
-export function ScheduleList({ day, selectedGroupFilter, onCardClick }: ScheduleListProps) {
+export function ScheduleList({ day, selectedGroupFilter, onCardClick, scrollToActive = true }: ScheduleListProps) {
+  const now = useCurrentTime();
+  const activeCardRef = useRef<HTMLElement | null>(null);
+
   const filteredClasses = filterClasses(day, selectedGroupFilter);
+
+  const activeIndex = filteredClasses.findIndex((cls) => {
+    const { inicio, fim } = getClassHorarios(cls);
+    return isClassActive(inicio, fim, day.id, now);
+  });
+
+  const isToday = day.id === getTodayDayId();
+  const shouldScroll = scrollToActive && isToday && activeIndex >= 0;
+
+  useEffect(() => {
+    if (!shouldScroll) return;
+    const scroll = () => {
+      activeCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+    const id = setTimeout(scroll, 350);
+    return () => clearTimeout(id);
+  }, [shouldScroll, activeIndex, day.id]);
 
   return (
     <AnimatePresence mode="wait">
@@ -49,14 +75,20 @@ export function ScheduleList({ day, selectedGroupFilter, onCardClick }: Schedule
             <p className="text-sm font-medium">Nenhuma aula neste dia</p>
           </motion.div>
         ) : (
-          filteredClasses.map((cls, i) => (
-            <ClassCard
-              key={`${day.id}-${cls.subject}-${cls.time}-${cls.location}-${i}`}
-              item={cls}
-              index={i}
-              onClick={onCardClick ? () => onCardClick(cls) : undefined}
-            />
-          ))
+          filteredClasses.map((cls, i) => {
+            const { inicio, fim } = getClassHorarios(cls);
+            const isActive = isClassActive(inicio, fim, day.id, now);
+            return (
+              <ClassCard
+                key={`${day.id}-${cls.subject}-${cls.time}-${cls.location}-${i}`}
+                item={cls}
+                index={i}
+                onClick={onCardClick ? () => onCardClick(cls) : undefined}
+                isActive={isActive}
+                innerRef={isActive ? activeCardRef : undefined}
+              />
+            );
+          })
         )}
       </motion.div>
     </AnimatePresence>

@@ -7,6 +7,10 @@ interface ClassCardProps {
   item: ClassItem;
   index: number;
   onClick?: () => void;
+  /** Se true, a aula está acontecendo agora (destaque visual + tag Agora) */
+  isActive?: boolean;
+  /** Ref para auto-scroll até o card ativo */
+  innerRef?: React.Ref<HTMLElement | null>;
 }
 
 interface TypeConfig {
@@ -66,8 +70,12 @@ const cardVariants: import('framer-motion').Variants = {
   }),
 };
 
-export function ClassCard({ item, index, onClick }: ClassCardProps) {
+export function ClassCard({ item, index, onClick, isActive = false, innerRef }: ClassCardProps) {
   const config = typeConfig[item.type];
+
+  const activeClasses = isActive
+    ? 'ring-2 ring-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.25)] dark:shadow-[0_0_20px_rgba(99,102,241,0.35)]'
+    : '';
 
   const baseProps = {
     layout: true as const,
@@ -76,7 +84,7 @@ export function ClassCard({ item, index, onClick }: ClassCardProps) {
     initial: 'hidden' as const,
     animate: 'visible' as const,
     transition: { layout: { type: 'spring' as const, stiffness: 350, damping: 30 } },
-    className: `rounded-3xl border p-5 ${config.bg} ${config.border} flex flex-col gap-3 text-left w-full`,
+    className: `rounded-3xl border p-5 ${config.bg} ${config.border} flex flex-col gap-3 text-left w-full ${activeClasses}`,
   };
 
   const content = (
@@ -86,6 +94,12 @@ export function ClassCard({ item, index, onClick }: ClassCardProps) {
           {item.subject}
         </h3>
         <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
+          {isActive && (
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-red-500 bg-red-500/10 px-2.5 py-1 rounded-full">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" aria-hidden />
+              Agora
+            </span>
+          )}
           {item.grupoAlvo && item.grupoAlvo !== GRUPO_TODOS && (
             <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-100 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400">
               <Users size={12} strokeWidth={2} />
@@ -121,6 +135,7 @@ export function ClassCard({ item, index, onClick }: ClassCardProps) {
       <motion.button
         type="button"
         {...baseProps}
+        {...(innerRef ? { ref: innerRef as React.Ref<HTMLButtonElement> } : {})}
         onClick={onClick}
         whileTap={{ scale: 0.98 }}
         className={`${baseProps.className} cursor-pointer`}
@@ -130,5 +145,12 @@ export function ClassCard({ item, index, onClick }: ClassCardProps) {
     );
   }
 
-  return <motion.div {...baseProps}>{content}</motion.div>;
+  return (
+    <motion.div
+      {...baseProps}
+      {...(innerRef ? { ref: innerRef as React.Ref<HTMLDivElement> } : {})}
+    >
+      {content}
+    </motion.div>
+  );
 }

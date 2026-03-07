@@ -31,6 +31,7 @@ html:not(.dark) #root {
   background-color: #f8f7f5;
 }
 
+/* Oculta scrollbars visualmente (PWA/app feel), mantém funcionalidade de scroll */
 ::-webkit-scrollbar {
   display: none;
 }
@@ -38,6 +39,16 @@ html:not(.dark) #root {
 * {
   scrollbar-width: none;
   -ms-overflow-style: none;
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Seta dos selects com espaçamento da borda direita */

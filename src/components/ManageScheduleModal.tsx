@@ -135,6 +135,7 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
     setFormOpen(false);
     setDuplicating({ aula, sourceDayId });
     setDuplicateTargetDays(new Set([sourceDayId]));
+    setExpandedDays((prev) => new Set(prev).add(sourceDayId));
   };
 
   const toggleDuplicateDay = (dayId: string) => {
@@ -218,68 +219,6 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
                 </motion.button>
 
                 <AnimatePresence mode="wait">
-                  {duplicating ? (
-                    <motion.div
-                      key="duplicate-panel"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="rounded-3xl border-2 border-indigo-200 dark:border-indigo-500/40 bg-indigo-50/50 dark:bg-indigo-500/5 p-4 sm:p-5"
-                    >
-                      <h3 className="text-base font-bold text-gray-900 dark:text-zinc-100 mb-2">
-                        Duplicar aula
-                      </h3>
-                      <p className="text-sm text-gray-600 dark:text-zinc-400 mb-4 truncate">
-                        {duplicating.aula.subject || '(Sem nome)'}
-                      </p>
-                      <label className={sectionLabelClass}>Copiar para os dias:</label>
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {daysToShow.map((d) => {
-                          const checked = duplicateTargetDays.has(d.id);
-                          return (
-                            <button
-                              key={d.id}
-                              type="button"
-                              onClick={() => toggleDuplicateDay(d.id)}
-                              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors min-h-[44px] ${
-                                checked
-                                  ? 'bg-indigo-500 text-white'
-                                  : 'bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:border-indigo-300 dark:hover:border-indigo-500/50'
-                              }`}
-                            >
-                              {checked && <Check size={16} strokeWidth={2} />}
-                              {d.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <div className="flex gap-3">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setDuplicating(null);
-                            setDuplicateTargetDays(new Set());
-                          }}
-                          className="flex-1 py-3 rounded-2xl border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-sm hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
-                        >
-                          Cancelar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={confirmDuplicate}
-                          disabled={duplicateTargetDays.size === 0}
-                          className="flex-1 py-3 rounded-2xl bg-indigo-500 text-white font-semibold text-sm hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-                        >
-                          <Copy size={18} strokeWidth={2} />
-                          Duplicar {duplicateTargetDays.size > 0 ? `(${duplicateTargetDays.size})` : ''}
-                        </button>
-                      </div>
-                    </motion.div>
-                  ) : null}
-                </AnimatePresence>
-
-                <AnimatePresence mode="wait">
                   {formOpen && !editingId ? (
                     <motion.div
                       key="form-add"
@@ -319,7 +258,7 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
                           <p className="text-xs text-gray-500 dark:text-zinc-500 mb-2">
                             Selecione um ou mais dias
                           </p>
-                          <div className="flex flex-wrap gap-2">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                             {(visibleDays.length > 0 ? visibleDays : schedule.slice(0, 5)).map((d) => {
                               const checked = form.dias_semana.includes(d.id);
                               return (
@@ -327,7 +266,7 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
                                   key={d.id}
                                   type="button"
                                   onClick={() => toggleFormDay(d.id)}
-                                  className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[44px] ${
+                                  className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[44px] ${
                                     checked
                                       ? 'bg-indigo-500 text-white'
                                       : 'bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:border-indigo-300 dark:hover:border-indigo-500/50'
@@ -469,8 +408,15 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
                                       Nenhuma aula neste dia
                                     </p>
                                   ) : (
-                                    sorted.map((aula) =>
-                                      editingId && editingDayId === day.id && aula.id === editingId ? (
+                                    sorted.map((aula) => {
+                                      const isDuplicatingThis =
+                                        duplicating &&
+                                        duplicating.sourceDayId === day.id &&
+                                        (duplicating.aula.id ? duplicating.aula.id === aula.id : duplicating.aula.subject === aula.subject && duplicating.aula.time === aula.time);
+
+                                      return (
+                                      <div key={aula.id ?? aula.subject + aula.time} className="space-y-2">
+                                      {editingId && editingDayId === day.id && aula.id === editingId ? (
                                         <motion.div
                                           key={`edit-${aula.id}`}
                                           layout
@@ -498,7 +444,7 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
                                               placeholder="Professor"
                                               className={inputClass}
                                             />
-                                            <div className="flex flex-wrap gap-2">
+                                            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                                               {(visibleDays.length > 0 ? visibleDays : schedule.slice(0, 5)).map((d) => {
                                                 const checked = form.dias_semana.includes(d.id);
                                                 return (
@@ -506,7 +452,7 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
                                                     key={d.id}
                                                     type="button"
                                                     onClick={() => toggleFormDay(d.id)}
-                                                    className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors min-h-[40px] ${
+                                                    className={`flex items-center justify-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors min-h-[40px] ${
                                                       checked ? 'bg-indigo-500 text-white' : 'bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300'
                                                     }`}
                                                   >
@@ -575,7 +521,6 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
                                         </motion.div>
                                       ) : (
                                         <motion.div
-                                          key={aula.id ?? aula.subject + aula.time}
                                           layout
                                           initial={{ opacity: 0, y: 4 }}
                                           animate={{ opacity: 1, y: 0 }}
@@ -626,8 +571,70 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
                                             </button>
                                           </div>
                                         </motion.div>
-                                      )
-                                    )
+                                      )}
+
+                                      {/* Card de duplicar — logo abaixo da matéria */}
+                                      {isDuplicatingThis && duplicating && (
+                                        <motion.div
+                                          initial={{ opacity: 0, height: 0 }}
+                                          animate={{ opacity: 1, height: 'auto' }}
+                                          exit={{ opacity: 0, height: 0 }}
+                                          transition={{ duration: 0.2 }}
+                                          className="rounded-2xl border-2 border-indigo-200 dark:border-indigo-500/40 bg-indigo-50/50 dark:bg-indigo-500/5 p-4"
+                                        >
+                                          <h3 className="text-sm font-bold text-gray-900 dark:text-zinc-100 mb-1">
+                                            Duplicar aula
+                                          </h3>
+                                          <p className="text-sm text-gray-600 dark:text-zinc-400 mb-3 truncate">
+                                            {duplicating.aula.subject || '(Sem nome)'}
+                                          </p>
+                                          <label className={sectionLabelClass}>Copiar para os dias:</label>
+                                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+                                            {daysToShow.map((d) => {
+                                              const checked = duplicateTargetDays.has(d.id);
+                                              return (
+                                                <button
+                                                  key={d.id}
+                                                  type="button"
+                                                  onClick={() => toggleDuplicateDay(d.id)}
+                                                  className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[44px] ${
+                                                    checked
+                                                      ? 'bg-indigo-500 text-white'
+                                                      : 'bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:border-indigo-300 dark:hover:border-indigo-500/50'
+                                                  }`}
+                                                >
+                                                  {checked && <Check size={16} strokeWidth={2} />}
+                                                  {d.shortLabel}
+                                                </button>
+                                              );
+                                            })}
+                                          </div>
+                                          <div className="flex gap-2">
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setDuplicating(null);
+                                                setDuplicateTargetDays(new Set());
+                                              }}
+                                              className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-sm hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
+                                            >
+                                              Cancelar
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={confirmDuplicate}
+                                              disabled={duplicateTargetDays.size === 0}
+                                              className="flex-1 py-2.5 rounded-xl bg-indigo-500 text-white font-semibold text-sm hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                                            >
+                                              <Copy size={16} strokeWidth={2} />
+                                              Duplicar {duplicateTargetDays.size > 0 ? `(${duplicateTargetDays.size})` : ''}
+                                            </button>
+                                          </div>
+                                        </motion.div>
+                                      )}
+                                    </div>
+                                    );
+                                    })
                                   )}
                                 </div>
                               </motion.div>

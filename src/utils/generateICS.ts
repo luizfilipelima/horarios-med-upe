@@ -16,9 +16,10 @@ const DAY_ID_TO_WEEKDAY: Record<string, number> = {
 
 function filterClassesByGroup(day: DaySchedule, selectedGroupFilter: string): ClassItem[] {
   if (selectedGroupFilter === FILTER_TODOS) return day.classes;
-  return day.classes.filter(
-    (c) => c.grupoAlvo === GRUPO_TODOS || c.grupoAlvo === selectedGroupFilter
-  );
+  return day.classes.filter((c) => {
+    const grupo = c.grupoAlvo?.trim() || GRUPO_TODOS;
+    return grupo === GRUPO_TODOS || grupo === selectedGroupFilter;
+  });
 }
 
 /** Parse "09:00 - 13:00" -> { start: "09:00", end: "13:00" } */

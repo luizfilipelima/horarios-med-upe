@@ -113,7 +113,7 @@ export function StudentView() {
 
   if (loadingInitial) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f8f7f5] dark:bg-zinc-950">
+      <div className="min-h-screen flex items-center justify-center bg-[#f8f7f5] dark:bg-zinc-950 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)]">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -127,13 +127,15 @@ export function StudentView() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f7f5] dark:bg-zinc-950 transition-colors duration-300 max-w-md mx-auto">
+    <div
+      className="min-h-screen bg-[#f8f7f5] dark:bg-zinc-950 transition-colors duration-300 max-w-md mx-auto pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)]"
+    >
       {/* Header: Logo, Títulos, Dark Mode, Menu */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
-        className="px-5 pt-12 pb-5"
+        className="px-5 pt-6 pb-7"
       >
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -186,7 +188,7 @@ export function StudentView() {
       />
 
       {/* Seletor de Dias */}
-      <div className="px-5 mb-5">
+      <div className="px-5 mb-8">
         <DaySelector
           days={visibleDays}
           selectedId={selectedId}
@@ -195,7 +197,7 @@ export function StudentView() {
       </div>
 
       {/* Cards de Aula */}
-      <div className="px-5 pb-6">
+      <div className="px-5 pb-4">
         <ScheduleList
           day={selectedDay}
           selectedGroupFilter={selectedGroupFilter}

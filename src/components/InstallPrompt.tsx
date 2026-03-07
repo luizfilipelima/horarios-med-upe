@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, Share2, Download } from 'lucide-react';
+import { X, Share2, Download, Smartphone } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -78,51 +78,65 @@ export function InstallPrompt() {
     <AnimatePresence>
       {visible && (
         <motion.div
-          initial={{ opacity: 0, y: 80 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 80 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="fixed bottom-0 left-0 right-0 z-40 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pointer-events-none"
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 100, opacity: 0 }}
+          transition={{ type: 'spring', bounce: 0.3 }}
+          className="fixed left-4 right-4 bottom-[max(env(safe-area-inset-bottom,20px),20px)] z-40 pointer-events-none"
         >
           <div
-            className="pointer-events-auto max-w-md mx-auto rounded-2xl shadow-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 overflow-hidden"
+            className="pointer-events-auto max-w-md mx-auto rounded-3xl shadow-2xl overflow-hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-black/5 dark:border-white/10"
             role="banner"
           >
-            <div className="relative px-4 py-3 pr-12">
+            <div className="relative flex gap-4 px-4 py-4 pr-12">
+              {/* Ícone à esquerda */}
+              <div className="shrink-0 w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-500 dark:text-indigo-400">
+                <Smartphone size={20} strokeWidth={2} />
+              </div>
+
+              {/* Conteúdo à direita */}
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-semibold text-gray-900 dark:text-slate-100">
+                  Instale o App Gradly
+                </h3>
+                <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5">
+                  Acesso rápido, direto na sua tela inicial.
+                </p>
+
+                {isIOS() ? (
+                  <div className="mt-3 flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-black/5 dark:bg-white/5">
+                    <Share2 size={14} strokeWidth={2} className="shrink-0 text-indigo-500 dark:text-indigo-400" />
+                    <span className="text-xs text-slate-600 dark:text-slate-400">
+                      Toque em <strong>Compartilhar</strong> e depois em &quot;Adicionar à Tela de Início&quot;.
+                    </span>
+                  </div>
+                ) : deferredPrompt ? (
+                  <motion.button
+                    type="button"
+                    onClick={handleInstall}
+                    disabled={installing}
+                    whileTap={{ scale: 0.98 }}
+                    className="mt-3 flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-indigo-500 text-white font-semibold text-sm hover:bg-indigo-600 disabled:opacity-70 transition-colors"
+                  >
+                    <Download size={18} strokeWidth={2} />
+                    {installing ? 'Instalando…' : 'Instalar App'}
+                  </motion.button>
+                ) : (
+                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-500">
+                    Use o menu do navegador (⋮) e selecione &quot;Adicionar à tela inicial&quot;.
+                  </p>
+                )}
+              </div>
+
+              {/* Botão fechar */}
               <button
                 type="button"
                 onClick={hide}
-                className="absolute top-3 right-3 p-2 rounded-full text-gray-400 dark:text-zinc-500 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-600 dark:hover:text-zinc-300 transition-colors"
+                className="absolute top-4 right-4 p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-black/5 dark:hover:bg-white/5 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
                 aria-label="Fechar"
               >
                 <X size={18} strokeWidth={2} />
               </button>
-              <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 pr-8">
-                📱 Tenha a Gradly sempre à mão! Adicione este painel à sua tela inicial.
-              </p>
-              {isIOS() ? (
-                <div className="mt-3 flex items-center gap-2 text-sm text-gray-600 dark:text-zinc-400">
-                  <Share2 size={16} strokeWidth={2} className="shrink-0 text-indigo-500" />
-                  <span>
-                    Toque em <strong>Compartilhar</strong> e depois em &quot;Adicionar à Tela de Início&quot;.
-                  </span>
-                </div>
-              ) : deferredPrompt ? (
-                <motion.button
-                  type="button"
-                  onClick={handleInstall}
-                  disabled={installing}
-                  whileTap={{ scale: 0.98 }}
-                  className="mt-3 flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-indigo-500 text-white font-semibold text-sm hover:bg-indigo-600 disabled:opacity-70 transition-colors"
-                >
-                  <Download size={18} strokeWidth={2} />
-                  {installing ? 'Instalando…' : 'Instalar App'}
-                </motion.button>
-              ) : (
-                <p className="mt-2 text-xs text-gray-500 dark:text-zinc-500">
-                  Use o menu do navegador (⋮) e selecione &quot;Adicionar à tela inicial&quot;.
-                </p>
-              )}
             </div>
           </div>
         </motion.div>
