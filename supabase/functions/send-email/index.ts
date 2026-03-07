@@ -14,9 +14,10 @@
 
 const RESEND_API_URL = "https://api.resend.com/emails";
 
-const corsHeaders = {
+export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS, GET",
 };
 
 const FROM_EMAIL = "onboarding@resend.dev"; // Para testes. Em produção: noreply@seudominio.com
@@ -61,7 +62,7 @@ function buildApprovedHtml(nome: string, turma: string, link: string): string {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { status: 200, headers: corsHeaders });
   }
 
   try {
