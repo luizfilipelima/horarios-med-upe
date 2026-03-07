@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
 
     const { data: perfis, error: perfisError } = await supabaseAdmin
       .from("perfis")
-      .select("id")
+      .select("id, whatsapp")
       .eq("turma_id", turma_id)
       .eq("role", "delegado");
 
@@ -89,11 +89,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    const delegados: { id: string; email: string }[] = [];
+    const delegados: { id: string; email: string; whatsapp: string | null }[] = [];
     for (const p of perfis ?? []) {
       const { data: userData } = await supabaseAdmin.auth.admin.getUserById(p.id);
       const email = userData?.user?.email ?? "";
-      if (email) delegados.push({ id: p.id, email });
+      if (email) delegados.push({ id: p.id, email, whatsapp: p.whatsapp ?? null });
     }
 
     return new Response(

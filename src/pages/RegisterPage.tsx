@@ -5,7 +5,7 @@ import { Loader2, Check, X, Eye, EyeOff } from 'lucide-react';
 import { supabaseClient } from '../lib/supabase';
 import { sendPendingEmail } from '../utils/emailService';
 import { useDebounce } from '../hooks/useDebounce';
-import { getPasswordStrength, formatWhatsApp, normalizeSlug } from '../utils/validators';
+import { getPasswordStrength, formatWhatsApp, whatsappToWaMe, type PaisCodigo } from '../utils/validators';
 
 const inputClass =
   'w-full rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md px-4 py-3.5 text-sm text-slate-50 placeholder-slate-500 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 focus:outline-none transition-all';
@@ -17,6 +17,7 @@ export function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [paisWhatsapp, setPaisWhatsapp] = useState<PaisCodigo>('br');
   const [whatsapp, setWhatsapp] = useState('');
   const [nomeTurma, setNomeTurma] = useState('');
   const [slugDesejado, setSlugDesejado] = useState('');
@@ -48,7 +49,7 @@ export function RegisterPage() {
   }, []);
 
   const handleWhatsAppChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setWhatsapp(formatWhatsApp(e.target.value));
+    setWhatsapp(formatWhatsApp(e.target.value, paisWhatsapp));
   };
 
   const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,9 +63,10 @@ export function RegisterPage() {
 
   const pwStrength = getPasswordStrength(password);
   const slugNorm = normalizeSlug(slugDesejado);
+  const whatsappDigits = whatsapp.replace(/\D/g, '');
   const canSubmitStep1 = nome.trim().length >= 3 && email.trim().length >= 5 && password.length >= 6;
   const canSubmitStep2 =
-    whatsapp.replace(/\D/g, '').length >= 10 &&
+    (paisWhatsapp === 'br' ? whatsappDigits.length >= 11 : whatsappDigits.length >= 9) &&
     nomeTurma.trim().length >= 3 &&
     slugNorm.length >= 2 &&
     slugAvailable === true;
@@ -82,7 +84,7 @@ export function RegisterPage() {
           data: {
             onboarding: true,
             nome_completo: nome.trim(),
-            whatsapp: whatsapp.trim(),
+            whatsapp: '+' + whatsappToWaMe(whatsapp.trim(), paisWhatsapp),
             nome_turma: nomeTurma.trim(),
             slug_desejado: slugNorm,
           },
@@ -207,11 +209,35 @@ export function RegisterPage() {
                 <h2 className="text-lg font-bold text-slate-50">Dados da turma</h2>
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1.5">WhatsApp</label>
+                  <div className="flex gap-2 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => { setPaisWhatsapp('br'); setWhatsapp(''); }}
+                      className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-colors ${
+                        paisWhatsapp === 'br'
+                          ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40'
+                          : 'bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10'
+                      }`}
+                    >
+                      🇧🇷 Brasil +55
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setPaisWhatsapp('py'); setWhatsapp(''); }}
+                      className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-colors ${
+                        paisWhatsapp === 'py'
+                          ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40'
+                          : 'bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10'
+                      }`}
+                    >
+                      🇵🇾 Paraguay +595
+                    </button>
+                  </div>
                   <input
                     type="tel"
                     value={whatsapp}
                     onChange={handleWhatsAppChange}
-                    placeholder="(00) 00000-0000"
+                    placeholder={paisWhatsapp === 'br' ? '(00) 00000-0000' : '9XX XXX XXX'}
                     className={inputClass}
                     required
                   />

@@ -110,7 +110,7 @@ export function AdminView() {
     ] = await Promise.all([
       supabaseClient.from('turmas').select('id, nome, faculdade, slug_url, created_at').order('created_at', { ascending: false }),
       supabaseClient.from('configuracoes').select('turma_id, titulo'),
-      supabaseClient.from('perfis').select('id, role, status').eq('role', 'delegado'),
+      supabaseClient.from('perfis').select('id, role, status, turma_id').eq('role', 'delegado'),
       supabaseClient.from('aulas').select('id', { count: 'exact', head: true }),
       supabaseClient.from('eventos').select('id', { count: 'exact', head: true }),
       supabaseClient.from('convites').select('id', { count: 'exact', head: true }).eq('usado', true),
@@ -136,6 +136,11 @@ export function AdminView() {
     if (convitesByTurmaRes.data && Array.isArray(convitesByTurmaRes.data)) {
       for (const row of convitesByTurmaRes.data as Array<{ turma_id: string }>) {
         if (row.turma_id) alunosMap[row.turma_id] = (alunosMap[row.turma_id] ?? 0) + 1;
+      }
+    }
+    for (const p of (perfisRes.data ?? []) as Array<{ turma_id?: string; status?: string }>) {
+      if (p.turma_id && p.status !== 'pendente' && p.status !== 'rejeitado') {
+        alunosMap[p.turma_id] = (alunosMap[p.turma_id] ?? 0) + 1;
       }
     }
     setAlunosByTurmaId(alunosMap);

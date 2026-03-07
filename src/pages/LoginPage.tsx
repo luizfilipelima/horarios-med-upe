@@ -15,7 +15,7 @@ function isAbortOrLockError(err: unknown): boolean {
 }
 
 export function LoginPage() {
-  const { signIn, signOut, session, profile, profileError, profileLoading } = useAuth();
+  const { signIn, signOut, refetchProfile, session, profile, profileError, profileLoading } = useAuth();
 
   if (session && !profileLoading) {
     if (profile?.status === 'pendente') {
@@ -47,20 +47,29 @@ export function LoginPage() {
             ) : (
               <>
                 <p className="text-sm text-gray-500 dark:text-zinc-500 mb-4">
-                  Sua conta ainda não está vinculada. Contate o administrador para ser adicionado como CEO ou delegado.
+                  Sua conta ainda não está vinculada ou o cadastro está em análise. Se você acabou de ser aprovado, clique em &quot;Tentar novamente&quot;.
                 </p>
                 <p className="text-xs text-gray-500 dark:text-zinc-500 mb-4 rounded-2xl bg-gray-100 dark:bg-zinc-800/80 px-3 py-2 text-left">
-                  Se você é o administrador: no Supabase (SQL Editor) confira se existe uma linha em <code className="text-indigo-500 dark:text-indigo-400">perfis</code> com <code className="text-indigo-500 dark:text-indigo-400">id</code> igual ao User UID em Authentication → Users e <code className="text-indigo-500 dark:text-indigo-400">role = &apos;ceo&apos;</code>.
+                  Se você é o administrador: confira em Supabase (perfis, auth.users) se o usuário está vinculado à turma correta.
                 </p>
               </>
             )}
-            <button
-              type="button"
-              onClick={() => signOut()}
-              className="px-4 py-2 rounded-2xl bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 font-medium text-sm hover:bg-gray-200 dark:hover:bg-zinc-700"
-            >
-              Sair
-            </button>
+            <div className="flex gap-2 justify-center flex-wrap">
+              <button
+                type="button"
+                onClick={() => refetchProfile()}
+                className="px-4 py-2 rounded-2xl bg-indigo-500 text-white font-medium text-sm hover:bg-indigo-600"
+              >
+                Tentar novamente
+              </button>
+              <button
+                type="button"
+                onClick={() => signOut()}
+                className="px-4 py-2 rounded-2xl bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 font-medium text-sm hover:bg-gray-200 dark:hover:bg-zinc-700"
+              >
+                Sair
+              </button>
+            </div>
           </div>
         </div>
       );

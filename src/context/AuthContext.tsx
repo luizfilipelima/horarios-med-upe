@@ -103,8 +103,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session?.user?.id]);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
     if (error) return { error: error as unknown as Error };
+    if (data?.user?.id) {
+      setProfileLoading(true);
+      const { profile: p, error: e } = await fetchProfile(data.user.id);
+      setProfile(p);
+      setProfileError(e);
+      setProfileLoading(false);
+    }
     return { error: null };
   }, []);
 

@@ -15,7 +15,7 @@ function DelegadoContent() {
 }
 
 export function DelegadoRoute() {
-  const { profile, profileLoading } = useAuth();
+  const { profile, profileLoading, refetchProfile } = useAuth();
   const { godModeTurmaId } = useGodMode();
 
   const turmaId = godModeTurmaId ?? profile?.turma_id ?? null;
@@ -41,11 +41,18 @@ export function DelegadoRoute() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-center px-6"
+          className="text-center px-6 max-w-sm"
         >
-          <p className="text-gray-600 dark:text-zinc-400">
-            Você não possui turma atribuída. Contate o administrador.
+          <p className="text-gray-600 dark:text-zinc-400 mb-4">
+            Você não possui turma atribuída. Se você acabou de ser aprovado, clique em &quot;Atualizar&quot;.
           </p>
+          <button
+            type="button"
+            onClick={() => refetchProfile()}
+            className="px-4 py-2 rounded-2xl bg-indigo-500 text-white font-medium text-sm hover:bg-indigo-600"
+          >
+            Atualizar
+          </button>
         </motion.div>
       </div>
     );
