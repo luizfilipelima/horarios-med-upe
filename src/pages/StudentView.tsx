@@ -147,13 +147,17 @@ export function StudentView() {
     };
   }, [loadingInitial, tituloPrincipal, subtitulo]);
 
-  // Atualiza o manifest link quando a URL muda (ex.: usuário seleciona grupo) — assim o "Adicionar à tela inicial" salva a URL com o grupo correto
+  // Atualiza o manifest link para incluir turma + grupo — assim o "Adicionar à tela inicial" salva a URL com o grupo correto
   useEffect(() => {
-    const p = location.pathname + location.search;
-    if (!p.startsWith('/t/')) return;
+    if (!slug) return;
+    const base = `/t/${slug}`;
+    const hasGrupo = selectedGroupFilter && selectedGroupFilter !== FILTER_TODOS;
+    const startUrl = hasGrupo
+      ? `${base}?grupo=${encodeURIComponent(selectedGroupFilter)}`
+      : base;
     const link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
-    if (link) link.href = '/api/manifest?start_url=' + encodeURIComponent(p);
-  }, [location.pathname, location.search]);
+    if (link) link.href = '/api/manifest?start_url=' + encodeURIComponent(startUrl);
+  }, [slug, selectedGroupFilter]);
 
   // Garante que o splash fique visível pelo tempo mínimo (animação do logo)
   useEffect(() => {
