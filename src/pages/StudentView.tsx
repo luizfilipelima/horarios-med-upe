@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { GraduationCap, Menu, Loader2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -16,6 +17,9 @@ import { generateICS, downloadICS, countExportableClasses } from '../utils/gener
 import { diasAteEvento } from '../utils/eventos';
 
 export function StudentView() {
+  const { slug } = useParams<{ slug: string }>();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { visibleDays, tituloPrincipal, subtitulo, googleDriveUrl, platformUrl, getInitialDayId, groups, eventos, loadingInitial } = useApp();
   const [menuOpen, setMenuOpen] = useState(false);
   const [eventsTimelineOpen, setEventsTimelineOpen] = useState(false);
@@ -26,8 +30,25 @@ export function StudentView() {
     [eventos]
   );
   const [selectedId, setSelectedId] = useState<string>(() => getInitialDayId());
-  const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>(FILTER_TODOS);
+  const grupoFromUrl = searchParams.get('grupo');
+  const [selectedGroupFilter, setSelectedGroupFilterState] = useState<string>(() => {
+    const g = grupoFromUrl ?? '';
+    if (!g || g === FILTER_TODOS) return FILTER_TODOS;
+    return g;
+  });
   const selectedDay = visibleDays.find((d) => d.id === selectedId) ?? visibleDays[0];
+
+  const setSelectedGroupFilter = useCallback(
+    (value: string) => {
+      setSelectedGroupFilterState(value);
+      const base = slug ? `/t/${slug}` : window.location.pathname;
+      const url = value !== FILTER_TODOS && value
+        ? `${base}?grupo=${encodeURIComponent(value)}`
+        : base;
+      navigate(url, { replace: true });
+    },
+    [navigate, slug]
+  );
 
   useEffect(() => {
     if (visibleDays.length > 0 && !visibleDays.some((d) => d.id === selectedId)) {
@@ -35,15 +56,29 @@ export function StudentView() {
     }
   }, [visibleDays, selectedId]);
 
+  // Sincronizar grupo da URL com o state (ex.: ao carregar ou ao voltar)
+  useEffect(() => {
+    const g = searchParams.get('grupo');
+    if (!g || g === FILTER_TODOS) {
+      if (selectedGroupFilter !== FILTER_TODOS) setSelectedGroupFilterState(FILTER_TODOS);
+      return;
+    }
+    if (groups.length > 0 && groups.includes(g) && selectedGroupFilter !== g) {
+      setSelectedGroupFilterState(g);
+    }
+  }, [searchParams, groups]);
+
   useEffect(() => {
     if (
       selectedGroupFilter !== FILTER_TODOS &&
       groups.length > 0 &&
       !groups.includes(selectedGroupFilter)
     ) {
-      setSelectedGroupFilter(FILTER_TODOS);
+      setSelectedGroupFilterState(FILTER_TODOS);
+      const base = slug ? `/t/${slug}` : window.location.pathname;
+      navigate(base, { replace: true });
     }
-  }, [groups, selectedGroupFilter]);
+  }, [groups, selectedGroupFilter, navigate, slug]);
 
   // Título da página e meta tags para aba e compartilhamento (ex.: WhatsApp)
   useEffect(() => {

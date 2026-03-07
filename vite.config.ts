@@ -17,6 +17,12 @@ export default defineConfig({
   // server aplica-se apenas a `vite dev`; build de produção não inclui HMR nem WebSocket
   server: {
     port: 5173,
+    proxy: {
+      '/api/manifest': {
+        target: 'http://localhost:5173',
+        rewrite: () => '/manifest.json',
+      },
+    },
   },
   build: {
     chunkSizeWarningLimit: 700,
