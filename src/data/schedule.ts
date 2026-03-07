@@ -1,7 +1,36 @@
 export type ClassType = 'teoria' | 'simulacion' | 'virtual' | 'practica';
 
-/** "Todos" = aula para todos os grupos; caso contrário = nome do grupo (ex: "Grupo C.1") */
+/** "Todos" = aula para todos os grupos; caso contrário = nome do grupo ou lista (ex: "C.1,C.2") */
 export const GRUPO_TODOS = 'Todos';
+
+const GRUPO_SEP = ',';
+
+/** Converte string armazenada em grupoAlvo para array de grupos */
+export function parseGruposAlvo(s: string | undefined): string[] {
+  const v = (s || '').trim();
+  if (!v || v === GRUPO_TODOS) return [GRUPO_TODOS];
+  return v.split(GRUPO_SEP).map((g) => g.trim()).filter(Boolean);
+}
+
+/** Converte array de grupos para string armazenada em grupo_alvo */
+export function serializeGruposAlvo(arr: string[]): string {
+  const list = arr.filter((g) => g && g !== GRUPO_TODOS);
+  if (list.length === 0 || arr.includes(GRUPO_TODOS)) return GRUPO_TODOS;
+  return list.join(GRUPO_SEP);
+}
+
+/** Verifica se a aula deve aparecer para o grupo selecionado */
+export function isClassForGroup(grupoAlvo: string | undefined, selectedGroup: string): boolean {
+  const grupos = parseGruposAlvo(grupoAlvo);
+  if (grupos.includes(GRUPO_TODOS)) return true;
+  return grupos.includes(selectedGroup);
+}
+
+/** Remove um grupo do valor grupoAlvo (para removerGrupo no AppContext) */
+export function removeGroupFromGrupoAlvo(grupoAlvo: string, groupToRemove: string): string {
+  const grupos = parseGruposAlvo(grupoAlvo).filter((g) => g !== groupToRemove && g !== GRUPO_TODOS);
+  return grupos.length === 0 ? GRUPO_TODOS : grupos.join(GRUPO_SEP);
+}
 
 export interface ClassItem {
   /** UUID no Supabase; presente quando a aula veio do banco */
@@ -16,7 +45,7 @@ export interface ClassItem {
   location: string;
   professor: string;
   type: ClassType;
-  /** Grupo ao qual a aula se aplica: "Todos" ou o nome de um grupo */
+  /** Grupo(s) aos quais a aula se aplica: "Todos" ou "C.1,C.2" (vários grupos) */
   grupoAlvo: string;
 }
 

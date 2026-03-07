@@ -12,6 +12,8 @@ import {
   getInitialDayId,
   createEmptySchedule,
   formatTimeRange,
+  removeGroupFromGrupoAlvo,
+  parseGruposAlvo,
   type ClassItem,
   type DaySchedule,
   type ClassType,
@@ -408,17 +410,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setSchedule((s) =>
           s.map((d) => ({
             ...d,
-            classes: d.classes.map((c) =>
-              c.grupoAlvo === name ? { ...c, grupoAlvo: 'Todos' } : c
-            ),
+            classes: d.classes.map((c) => {
+              if (!parseGruposAlvo(c.grupoAlvo).includes(name)) return c;
+              return { ...c, grupoAlvo: removeGroupFromGrupoAlvo(c.grupoAlvo, name) };
+            }),
           }))
         );
         if (SUPABASE_ENABLED && turmaId) {
           setSaving('Salvando...');
-          Promise.all([
-            supabaseClient.from('configuracoes').update({ array_de_grupos: next }).eq('turma_id', turmaId),
-            supabaseClient.from('aulas').update({ grupo_alvo: 'Todos' }).eq('grupo_alvo', name).eq('turma_id', turmaId),
-          ]).finally(() => setSaving(null));
+          supabaseClient.from('configuracoes').update({ array_de_grupos: next }).eq('turma_id', turmaId).then(() => setSaving(null));
+          supabaseClient
+            .from('aulas')
+            .select('id, grupo_alvo')
+            .eq('turma_id', turmaId)
+            .then(({ data }) => {
+              if (!data) {
+                setSaving(null);
+                return;
+              }
+              const updates = data
+                .filter((row) => parseGruposAlvo(row.grupo_alvo).includes(name))
+                .map((row) =>
+                  supabaseClient.from('aulas').update({ grupo_alvo: removeGroupFromGrupoAlvo(row.grupo_alvo, name) }).eq('id', row.id).eq('turma_id', turmaId)
+                );
+              Promise.all(updates).then(() => setSaving(null));
+            });
         }
         return next;
       });

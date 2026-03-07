@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Clock, MapPin, User, Wifi, FlaskConical, BookOpen, Trash2, Copy, ChevronUp, ChevronDown, Users, Stethoscope } from 'lucide-react';
 import type { ClassItem, ClassType } from '../data/schedule';
-import { GRUPO_TODOS } from '../data/schedule';
+import { parseGruposAlvo, GRUPO_TODOS } from '../data/schedule';
 
 interface ClassCardEditableProps {
   item: ClassItem;
@@ -63,7 +63,8 @@ const inputClass =
 
 export function ClassCardEditable({ item, index, groups, canMoveUp, canMoveDown, onUpdate, onRemove, onDuplicate, onMoveUp, onMoveDown }: ClassCardEditableProps) {
   const config = typeConfig[item.type];
-  const grupoValue = item.grupoAlvo === GRUPO_TODOS || groups.includes(item.grupoAlvo)
+  const grupos = parseGruposAlvo(item.grupoAlvo);
+  const grupoValue = grupos.includes(GRUPO_TODOS) || grupos.some((g) => groups.includes(g))
     ? item.grupoAlvo
     : GRUPO_TODOS;
 
@@ -83,12 +84,16 @@ export function ClassCardEditable({ item, index, groups, canMoveUp, canMoveDown,
           className={`${inputClass} flex-1 min-w-0 font-bold`}
         />
         <div className="flex items-center gap-2 flex-shrink-0">
-          {item.grupoAlvo && item.grupoAlvo !== GRUPO_TODOS && (
-            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-100 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 self-center">
-              <Users size={12} strokeWidth={2} />
-              {item.grupoAlvo}
-            </span>
-          )}
+          {(() => {
+            const gruposDisplay = parseGruposAlvo(item.grupoAlvo).filter((g) => g !== GRUPO_TODOS);
+            if (gruposDisplay.length === 0) return null;
+            return (
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-100 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 self-center">
+                <Users size={12} strokeWidth={2} />
+                {gruposDisplay.join(', ')}
+              </span>
+            );
+          })()}
           <select
             value={item.type}
             onChange={(e) => onUpdate('type', e.target.value as ClassType)}

@@ -2,7 +2,7 @@ import { useRef, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CalendarX } from 'lucide-react';
 import type { ClassItem, DaySchedule } from '../data/schedule';
-import { GRUPO_TODOS } from '../data/schedule';
+import { isClassForGroup } from '../data/schedule';
 import { ClassCard } from './ClassCard';
 import { FILTER_TODOS } from './GroupFilter';
 import { useCurrentTime } from '../hooks/useCurrentTime';
@@ -24,10 +24,7 @@ const containerVariants = {
 
 function filterClasses(day: DaySchedule, selectedGroupFilter: string): ClassItem[] {
   if (selectedGroupFilter === FILTER_TODOS) return day.classes;
-  return day.classes.filter((c) => {
-    const grupo = c.grupoAlvo?.trim() || GRUPO_TODOS;
-    return grupo === GRUPO_TODOS || grupo === selectedGroupFilter;
-  });
+  return day.classes.filter((c) => isClassForGroup(c.grupoAlvo, selectedGroupFilter));
 }
 
 export function ScheduleList({ day, selectedGroupFilter, onCardClick, scrollToActive = true }: ScheduleListProps) {

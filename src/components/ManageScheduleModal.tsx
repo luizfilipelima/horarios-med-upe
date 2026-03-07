@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, Plus, Pencil, Trash2, ChevronDown, ChevronUp, Users, Copy, Check } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { formatTimeRange, GRUPO_TODOS } from '../data/schedule';
+import { formatTimeRange, GRUPO_TODOS, parseGruposAlvo, serializeGruposAlvo } from '../data/schedule';
 import type { ClassItem, ClassType } from '../data/schedule';
 
 const inputClass =
@@ -38,7 +38,7 @@ const emptyForm = {
   horarioFim: '10:00',
   type: 'teoria' as ClassType,
   location: '',
-  grupoAlvo: 'Todos',
+  gruposAlvo: [GRUPO_TODOS] as string[],
 };
 
 export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProps) {
@@ -77,7 +77,7 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
       horarioFim: item.horarioFim ?? '10:00',
       type: item.type,
       location: item.location,
-      grupoAlvo: item.grupoAlvo || 'Todos',
+      gruposAlvo: parseGruposAlvo(item.grupoAlvo),
     });
     setEditingId(item.id ?? null);
     setEditingDayId(dayId);
@@ -94,6 +94,22 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
     });
   };
 
+  const toggleFormGrupo = (grupo: string) => {
+    setForm((prev) => {
+      const hasTodos = prev.gruposAlvo.includes(GRUPO_TODOS);
+      const hasGrupo = prev.gruposAlvo.includes(grupo);
+      if (grupo === GRUPO_TODOS) {
+        return { ...prev, gruposAlvo: hasTodos ? prev.gruposAlvo : [GRUPO_TODOS] };
+      }
+      if (hasGrupo) {
+        const next = prev.gruposAlvo.filter((g) => g !== grupo);
+        return { ...prev, gruposAlvo: next.length > 0 ? next : [GRUPO_TODOS] };
+      }
+      const withoutTodos = prev.gruposAlvo.filter((g) => g !== GRUPO_TODOS);
+      return { ...prev, gruposAlvo: [...withoutTodos, grupo] };
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.subject.trim() || form.dias_semana.length === 0) return;
@@ -105,7 +121,7 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
       horarioFim: form.horarioFim,
       type: form.type,
       location: form.location.trim(),
-      grupoAlvo: form.grupoAlvo || 'Todos',
+      grupoAlvo: serializeGruposAlvo(form.gruposAlvo),
       time: formatTimeRange(form.horarioInicio, form.horarioFim),
     };
 
@@ -158,7 +174,7 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
       horarioFim: fim,
       type: aula.type,
       location: aula.location,
-      grupoAlvo: aula.grupoAlvo || 'Todos',
+      grupoAlvo: aula.grupoAlvo || GRUPO_TODOS,
       time: formatTimeRange(inicio, fim),
     };
     duplicateTargetDays.forEach((dayId) => {
@@ -324,17 +340,42 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
                           />
                         </div>
                         <div>
-                          <label className={sectionLabelClass}>Grupo</label>
-                          <select
-                            value={form.grupoAlvo === GRUPO_TODOS || !groups.includes(form.grupoAlvo) ? GRUPO_TODOS : form.grupoAlvo}
-                            onChange={(e) => setForm((f) => ({ ...f, grupoAlvo: e.target.value }))}
-                            className={`${inputClass} select-arrow select-arrow-right`}
-                          >
-                            <option value={GRUPO_TODOS}>Todos</option>
-                            {groups.map((g) => (
-                              <option key={g} value={g}>{g}</option>
-                            ))}
-                          </select>
+                          <label className={sectionLabelClass}>Grupos vinculados</label>
+                          <p className="text-xs text-gray-500 dark:text-zinc-500 mb-2">
+                            Selecione &quot;Todos&quot; ou um ou mais grupos específicos
+                          </p>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => toggleFormGrupo(GRUPO_TODOS)}
+                              className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[44px] ${
+                                form.gruposAlvo.includes(GRUPO_TODOS)
+                                  ? 'bg-indigo-500 text-white'
+                                  : 'bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:border-indigo-300 dark:hover:border-indigo-500/50'
+                              }`}
+                            >
+                              {form.gruposAlvo.includes(GRUPO_TODOS) && <Check size={16} strokeWidth={2} />}
+                              Todos
+                            </button>
+                            {groups.map((g) => {
+                              const checked = form.gruposAlvo.includes(g);
+                              return (
+                                <button
+                                  key={g}
+                                  type="button"
+                                  onClick={() => toggleFormGrupo(g)}
+                                  className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[44px] ${
+                                    checked
+                                      ? 'bg-indigo-500 text-white'
+                                      : 'bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:border-indigo-300 dark:hover:border-indigo-500/50'
+                                  }`}
+                                >
+                                  {checked && <Check size={16} strokeWidth={2} />}
+                                  {g}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                         <div className="flex gap-3 pt-2">
                           <button
@@ -492,16 +533,37 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
                                               placeholder="Sala / Local"
                                               className={inputClass}
                                             />
-                                            <select
-                                              value={form.grupoAlvo === GRUPO_TODOS || !groups.includes(form.grupoAlvo) ? GRUPO_TODOS : form.grupoAlvo}
-                                              onChange={(e) => setForm((f) => ({ ...f, grupoAlvo: e.target.value }))}
-                                              className={`${inputClass} select-arrow select-arrow-right`}
-                                            >
-                                              <option value={GRUPO_TODOS}>Todos</option>
-                                              {groups.map((g) => (
-                                                <option key={g} value={g}>{g}</option>
-                                              ))}
-                                            </select>
+                                            <div>
+                                              <label className="block text-xs font-semibold text-gray-500 dark:text-zinc-400 mb-1.5">Grupos</label>
+                                              <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
+                                                <button
+                                                  type="button"
+                                                  onClick={() => toggleFormGrupo(GRUPO_TODOS)}
+                                                  className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs font-medium transition-colors min-h-[40px] ${
+                                                    form.gruposAlvo.includes(GRUPO_TODOS) ? 'bg-indigo-500 text-white' : 'bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300'
+                                                  }`}
+                                                >
+                                                  {form.gruposAlvo.includes(GRUPO_TODOS) && <Check size={14} strokeWidth={2} />}
+                                                  Todos
+                                                </button>
+                                                {groups.map((g) => {
+                                                  const checked = form.gruposAlvo.includes(g);
+                                                  return (
+                                                    <button
+                                                      key={g}
+                                                      type="button"
+                                                      onClick={() => toggleFormGrupo(g)}
+                                                      className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs font-medium transition-colors min-h-[40px] ${
+                                                        checked ? 'bg-indigo-500 text-white' : 'bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300'
+                                                      }`}
+                                                    >
+                                                      {checked && <Check size={14} strokeWidth={2} />}
+                                                      {g}
+                                                    </button>
+                                                  );
+                                                })}
+                                              </div>
+                                            </div>
                                             <div className="flex gap-2 pt-1">
                                               <button
                                                 type="button"
@@ -532,12 +594,16 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
                                               <p className="font-medium text-gray-900 dark:text-zinc-100 truncate">
                                                 {aula.subject || '(Sem nome)'}
                                               </p>
-                                              {aula.grupoAlvo && aula.grupoAlvo !== GRUPO_TODOS && (
-                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 shrink-0">
-                                                  <Users size={10} strokeWidth={2} />
-                                                  {aula.grupoAlvo}
-                                                </span>
-                                              )}
+                                              {(() => {
+                                                const grupos = parseGruposAlvo(aula.grupoAlvo).filter((g) => g !== GRUPO_TODOS);
+                                                if (grupos.length === 0) return null;
+                                                return (
+                                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 shrink-0">
+                                                    <Users size={10} strokeWidth={2} />
+                                                    {grupos.join(', ')}
+                                                  </span>
+                                                );
+                                              })()}
                                             </div>
                                             <p className="text-xs text-gray-500 dark:text-zinc-500">
                                               {aula.time}

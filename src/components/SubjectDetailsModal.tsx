@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, User, MapPin, Clock, Users, CalendarPlus } from 'lucide-react';
 import type { ClassItem, ClassType } from '../data/schedule';
-import { GRUPO_TODOS } from '../data/schedule';
+import { parseGruposAlvo, GRUPO_TODOS } from '../data/schedule';
 import type { EventoItem } from '../context/AppContext';
 import { downloadICS } from '../utils/generateICS';
 import { generateEventReminderICS } from '../utils/eventoReminderICS';
@@ -113,12 +113,16 @@ export function SubjectDetailsModal({ isOpen, onClose, item, eventos }: SubjectD
                       <Clock size={18} strokeWidth={2} className="text-gray-500 dark:text-zinc-500 shrink-0" />
                       <span className="text-sm">{item.time || '—'}</span>
                     </div>
-                    {item.grupoAlvo && item.grupoAlvo !== GRUPO_TODOS && (
-                      <div className="flex items-center gap-3 text-gray-700 dark:text-zinc-300">
-                        <Users size={18} strokeWidth={2} className="text-gray-500 dark:text-zinc-500 shrink-0" />
-                        <span className="text-sm">{item.grupoAlvo}</span>
-                      </div>
-                    )}
+                    {(() => {
+                      const grupos = parseGruposAlvo(item.grupoAlvo).filter((g) => g !== GRUPO_TODOS);
+                      if (grupos.length === 0) return null;
+                      return (
+                        <div className="flex items-center gap-3 text-gray-700 dark:text-zinc-300">
+                          <Users size={18} strokeWidth={2} className="text-gray-500 dark:text-zinc-500 shrink-0" />
+                          <span className="text-sm">{grupos.join(', ')}</span>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </section>
 

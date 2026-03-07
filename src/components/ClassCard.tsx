@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
-import { Clock, MapPin, User, Users, Wifi, FlaskConical, BookOpen, Stethoscope } from 'lucide-react';
+import { Clock, MapPin, User, Users, Wifi, FlaskConical, BookOpen, Stethoscope, ChevronRight } from 'lucide-react';
 import type { ClassItem, ClassType } from '../data/schedule';
-import { GRUPO_TODOS } from '../data/schedule';
+import { parseGruposAlvo, GRUPO_TODOS } from '../data/schedule';
 
 interface ClassCardProps {
   item: ClassItem;
@@ -84,49 +84,61 @@ export function ClassCard({ item, index, onClick, isActive = false, innerRef }: 
     initial: 'hidden' as const,
     animate: 'visible' as const,
     transition: { layout: { type: 'spring' as const, stiffness: 350, damping: 30 } },
-    className: `rounded-3xl border p-5 ${config.bg} ${config.border} flex flex-col gap-3 text-left w-full ${activeClasses}`,
+    className: `rounded-3xl border p-5 ${config.bg} ${config.border} flex gap-3 text-left w-full ${activeClasses} transition-colors duration-200 hover:bg-black/5 dark:hover:bg-white/5 hover:border-indigo-500/30 dark:hover:border-indigo-500/30`,
   };
 
   const content = (
     <>
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="text-base font-bold text-gray-900 dark:text-zinc-100 leading-tight flex-1 min-w-0">
-          {item.subject}
-        </h3>
-        <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
-          {isActive && (
-            <span className="flex items-center gap-1.5 text-xs font-semibold text-red-500 bg-red-500/10 px-2.5 py-1 rounded-full">
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" aria-hidden />
-              Agora
+      <div className="flex-1 min-w-0 flex flex-col gap-3">
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="text-base font-bold text-gray-900 dark:text-zinc-100 leading-tight flex-1 min-w-0">
+            {item.subject}
+          </h3>
+          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
+            {isActive && (
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-red-500 bg-red-500/10 px-2.5 py-1 rounded-full">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" aria-hidden />
+                Agora
+              </span>
+            )}
+            {(() => {
+              const grupos = parseGruposAlvo(item.grupoAlvo).filter((g) => g !== GRUPO_TODOS);
+              if (grupos.length === 0) return null;
+              return (
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-100 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400">
+                  <Users size={12} strokeWidth={2} />
+                  {grupos.join(', ')}
+                </span>
+              );
+            })()}
+            <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${config.tag} ${config.tagText}`}>
+              {config.icon}
+              {config.label}
             </span>
-          )}
-          {item.grupoAlvo && item.grupoAlvo !== GRUPO_TODOS && (
-            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-100 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400">
-              <Users size={12} strokeWidth={2} />
-              {item.grupoAlvo}
-            </span>
-          )}
-          <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${config.tag} ${config.tagText}`}>
-            {config.icon}
-            {config.label}
-          </span>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <Clock size={14} strokeWidth={2} className="flex-shrink-0 text-gray-600 dark:text-zinc-500" />
+            <span className="text-sm font-medium text-gray-800 dark:text-zinc-300">{item.time}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <MapPin size={14} strokeWidth={2} className="flex-shrink-0 text-gray-600 dark:text-zinc-500" />
+            <span className="text-sm text-gray-700 dark:text-zinc-400">{item.location}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <User size={14} strokeWidth={2} className="flex-shrink-0 text-gray-600 dark:text-zinc-500" />
+            <span className="text-sm text-gray-400 dark:text-zinc-500 italic">{item.professor}</span>
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-2">
-          <Clock size={14} strokeWidth={2} className="flex-shrink-0 text-gray-600 dark:text-zinc-500" />
-          <span className="text-sm font-medium text-gray-800 dark:text-zinc-300">{item.time}</span>
+      {onClick && (
+        <div className="flex-shrink-0 flex items-center self-center">
+          <ChevronRight size={20} strokeWidth={2} className="w-5 h-5 text-slate-500 dark:text-white/20" aria-hidden />
         </div>
-        <div className="flex items-center gap-2">
-          <MapPin size={14} strokeWidth={2} className="flex-shrink-0 text-gray-600 dark:text-zinc-500" />
-          <span className="text-sm text-gray-700 dark:text-zinc-400">{item.location}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <User size={14} strokeWidth={2} className="flex-shrink-0 text-gray-600 dark:text-zinc-500" />
-          <span className="text-sm text-gray-400 dark:text-zinc-500 italic">{item.professor}</span>
-        </div>
-      </div>
+      )}
     </>
   );
 
@@ -138,6 +150,7 @@ export function ClassCard({ item, index, onClick, isActive = false, innerRef }: 
         {...(innerRef ? { ref: innerRef as React.Ref<HTMLButtonElement> } : {})}
         onClick={onClick}
         whileTap={{ scale: 0.98 }}
+        whileHover={{ scale: 1.01 }}
         className={`${baseProps.className} cursor-pointer`}
       >
         {content}
