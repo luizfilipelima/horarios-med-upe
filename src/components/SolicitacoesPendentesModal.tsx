@@ -56,46 +56,16 @@ export function SolicitacoesPendentesModal({ isOpen, onClose, onSuccess }: Solic
     setProcessingId(s.id);
     setError(null);
     try {
-      const slug = s.slug_desejado.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const { data, error: fnError } = await supabaseClient.functions.invoke('aprovar-solicitacao', {
+        body: {
+          perfil_id: s.id,
+          nome_turma: s.nome_turma.trim(),
+          slug_desejado: s.slug_desejado.trim(),
+        },
+      });
 
-      // Verificar se já existe turma com esse slug (ex.: reaprovação ou slug duplicado)
-      const { data: turmaExistente } = await supabaseClient
-        .from('turmas')
-        .select('id')
-        .eq('slug_url', slug)
-        .maybeSingle();
-
-      let turmaId: string;
-      if (turmaExistente?.id) {
-        turmaId = turmaExistente.id;
-      } else {
-        const { data: newTurma, error: errTurma } = await supabaseClient
-          .from('turmas')
-          .insert({ nome: s.nome_turma.trim(), faculdade: '', slug_url: slug })
-          .select('id')
-          .single();
-
-        if (errTurma || !newTurma) throw new Error(errTurma?.message ?? 'Erro ao criar turma');
-        turmaId = newTurma.id;
-
-        await supabaseClient.from('configuracoes').insert({
-          turma_id: turmaId,
-          titulo: s.nome_turma.trim(),
-          subtitulo: '',
-          link_drive: 'https://drive.google.com',
-          link_plataforma: 'https://campus.upe.edu.py:86/moodle/my/courses.php',
-          ativar_sabado: false,
-          ativar_domingo: false,
-          array_de_grupos: ['Grupo 1'],
-        });
-      }
-
-      const { error: errPerfil } = await supabaseClient
-        .from('perfis')
-        .update({ status: 'aprovado', turma_id: turmaId })
-        .eq('id', s.id);
-
-      if (errPerfil) throw errPerfil;
+      if (fnError) throw fnError;
+      if (data?.error) throw new Error(data.error);
 
       setSolicitacoes((prev) => prev.filter((x) => x.id !== s.id));
       onSuccess();

@@ -64,6 +64,7 @@ interface AppContextValue extends AppState {
   addGroup: (name: string) => void;
   removeGroup: (name: string) => void;
   addEvento: (item: Omit<EventoItem, 'id'>) => void;
+  updateEvento: (id: string, item: Partial<Omit<EventoItem, 'id'>>) => void;
   removeEvento: (id: string) => void;
   updateDayClasses: (dayId: string, classes: ClassItem[]) => void;
   addClass: (dayId: string, classItem: ClassItem) => void;
@@ -464,6 +465,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setEventosState((prev) => [...prev, { ...item, id }]);
   }, [turmaId]);
 
+  const updateEvento = useCallback(
+    async (id: string, item: Partial<Omit<EventoItem, 'id'>>) => {
+      const updates: Record<string, unknown> = {};
+      if (item.titulo != null) updates.titulo = item.titulo;
+      if (item.materia != null) updates.materia = item.materia;
+      if (item.data != null) updates.data = item.data;
+      if (item.pontuacao != null) updates.pontuacao = item.pontuacao;
+      if (item.descricao != null) updates.descricao = item.descricao;
+      if (item.tipo != null) updates.tipo = item.tipo;
+      if (Object.keys(updates).length === 0) return;
+
+      if (SUPABASE_ENABLED && turmaId) {
+        setSaving('Salvando...');
+        await supabaseClient.from('eventos').update(updates).eq('id', id).eq('turma_id', turmaId);
+        setSaving(null);
+      }
+      setEventosState((prev) =>
+        prev.map((e) => (e.id === id ? { ...e, ...item } : e))
+      );
+    },
+    [turmaId]
+  );
+
   const removeEvento = useCallback(
     async (id: string) => {
       if (SUPABASE_ENABLED && turmaId) {
@@ -749,6 +773,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addGroup,
       removeGroup,
       addEvento,
+      updateEvento,
       removeEvento,
       updateDayClasses,
       addClass,
@@ -785,6 +810,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addGroup,
       removeGroup,
       addEvento,
+      updateEvento,
       removeEvento,
       updateDayClasses,
       addClass,

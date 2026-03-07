@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import type { EventoItem, EventoTipo } from '../context/AppContext';
-import { diasAteEvento, labelDiasEvento, somaPontuacao } from '../utils/eventos';
+import { diasAteEvento, labelDiasEvento } from '../utils/eventos';
 
 interface EventsTimelineModalProps {
   isOpen: boolean;
@@ -18,8 +18,6 @@ function formatEventDate(iso: string): string {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
     });
   } catch {
     return iso;
@@ -97,7 +95,6 @@ export function EventsTimelineModal({ isOpen, onClose }: EventsTimelineModalProp
   }, [eventos]);
 
   const list = tab === 'proximos' ? proximos : passados;
-  const totalPontos = useMemo(() => somaPontuacao(eventos), [eventos]);
 
   return (
     <AnimatePresence>
@@ -136,12 +133,6 @@ export function EventsTimelineModal({ isOpen, onClose }: EventsTimelineModalProp
               </div>
 
               <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
-                {eventos.length > 0 && (
-                  <p className="text-sm font-medium text-gray-600 dark:text-zinc-400 rounded-2xl bg-gray-100 dark:bg-zinc-800/60 px-4 py-2.5">
-                    Total distribuído: <strong>{totalPontos}</strong> pontos
-                  </p>
-                )}
-
                 <div className="flex gap-2 p-1 rounded-full bg-gray-100 dark:bg-zinc-800/80 w-fit">
                   {(['proximos', 'passados'] as const).map((t) => (
                     <button

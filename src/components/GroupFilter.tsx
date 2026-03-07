@@ -15,8 +15,10 @@ export function GroupFilter({ groups, selected, onSelect }: GroupFilterProps) {
 
   const handleSelect = (value: string) => {
     onSelect(value);
-    const el = containerRef.current?.querySelector(`[data-filter="${value}"]`) as HTMLElement;
-    el?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    if (value !== FILTER_TODOS) {
+      const el = containerRef.current?.querySelector(`[data-filter="${value}"]`) as HTMLElement;
+      el?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
   };
 
   return (
@@ -37,6 +39,7 @@ export function GroupFilter({ groups, selected, onSelect }: GroupFilterProps) {
               onClick={() => handleSelect(value)}
               className={`
                 relative flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold
+                ${value === FILTER_TODOS ? 'sticky left-0 z-10 bg-white dark:bg-zinc-900' : ''}
                 transition-colors duration-200 focus:outline-none
                 ${isSelected
                   ? 'text-white'

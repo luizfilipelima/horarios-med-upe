@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, Plus, Trash2, Loader2, CalendarClock } from 'lucide-react';
+import { X, Plus, Trash2, Pencil, Loader2, Calendar } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import type { EventoTipo } from '../context/AppContext';
+import type { EventoTipo, EventoItem } from '../context/AppContext';
 
 const TIPOS: { value: EventoTipo; label: string }[] = [
   { value: 'Prova', label: 'Prova' },
@@ -22,16 +22,28 @@ function formatEventDate(iso: string): string {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
     });
   } catch {
     return iso;
   }
 }
 
+/** Converte data ISO para input type="date" (YYYY-MM-DD) */
+function isoToDateInput(iso: string): string {
+  try {
+    return new Date(iso).toISOString().slice(0, 10);
+  } catch {
+    return '';
+  }
+}
+
 export function ManageEventsModal({ isOpen, onClose }: ManageEventsModalProps) {
-  const { schedule, eventos, addEvento, removeEvento, savingMessage } = useApp();
+  const { schedule, eventos, addEvento, updateEvento, removeEvento, savingMessage } = useApp();
+  const [editingEvent, setEditingEvent] = useState<EventoItem | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) setEditingEvent(null);
+  }, [isOpen]);
 
   const materias = useMemo(() => {
     const set = new Set<string>();
@@ -50,19 +62,53 @@ export function ManageEventsModal({ isOpen, onClose }: ManageEventsModalProps) {
   const [descricao, setDescricao] = useState('');
   const [tipo, setTipo] = useState<EventoTipo>('Prova');
 
+  useEffect(() => {
+    if (editingEvent) {
+      setTitulo(editingEvent.titulo);
+      setMateria(editingEvent.materia);
+      setData(isoToDateInput(editingEvent.data));
+      setPontuacao(editingEvent.pontuacao);
+      setDescricao(editingEvent.descricao);
+      setTipo(editingEvent.tipo);
+    } else {
+      setTitulo('');
+      setMateria('');
+      setData('');
+      setPontuacao('');
+      setDescricao('');
+      setTipo('Prova');
+    }
+  }, [editingEvent]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!titulo.trim()) return;
-    const dateStr = data || new Date().toISOString().slice(0, 16);
-    const iso = new Date(dateStr).toISOString();
-    await addEvento({
+    const dateStr = data || new Date().toISOString().slice(0, 10);
+    const iso = new Date(dateStr + 'T12:00:00').toISOString();
+    const payload = {
       titulo: titulo.trim(),
       materia: materia.trim(),
       data: iso,
       pontuacao: pontuacao.trim(),
       descricao: descricao.trim(),
       tipo,
-    });
+    };
+    if (editingEvent) {
+      await updateEvento(editingEvent.id, payload);
+      setEditingEvent(null);
+    } else {
+      await addEvento(payload);
+    }
+    setTitulo('');
+    setMateria('');
+    setData('');
+    setPontuacao('');
+    setDescricao('');
+    setTipo('Prova');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingEvent(null);
     setTitulo('');
     setMateria('');
     setData('');
@@ -110,7 +156,9 @@ export function ManageEventsModal({ isOpen, onClose }: ManageEventsModalProps) {
               <div className="flex-1 overflow-y-auto scrollbar-hide">
                 {/* Bloco: Criar Novo Evento */}
                 <section className="p-5 pb-4 border-b border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-slate-900/20">
-                  <label className="label-premium">Criar Novo Evento</label>
+                  <label className="label-premium">
+                    {editingEvent ? 'Editar Evento' : 'Criar Novo Evento'}
+                  </label>
                   <form onSubmit={handleSubmit} className="space-y-3">
                     <div>
                       <label htmlFor="ev-titulo" className="label-premium">
@@ -150,14 +198,14 @@ export function ManageEventsModal({ isOpen, onClose }: ManageEventsModalProps) {
                     </div>
                     <div>
                       <label htmlFor="ev-data" className="label-premium">
-                        Data e horário
+                        Data
                       </label>
                       <div className="relative">
                         <div
                           className="input-premium flex items-center gap-3 pointer-events-none"
                           aria-hidden
                         >
-                          <CalendarClock
+                          <Calendar
                             size={18}
                             className="text-slate-400 dark:text-zinc-500 shrink-0"
                             strokeWidth={2}
@@ -170,17 +218,17 @@ export function ManageEventsModal({ isOpen, onClose }: ManageEventsModalProps) {
                             }
                           >
                             {data
-                              ? formatEventDate(new Date(data).toISOString())
-                              : 'Definir data e horário'}
+                              ? formatEventDate(new Date(data + 'T12:00:00').toISOString())
+                              : 'Selecionar data'}
                           </span>
                         </div>
                         <input
                           id="ev-data"
-                          type="datetime-local"
+                          type="date"
                           value={data}
                           onChange={(e) => setData(e.target.value)}
                           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                          aria-label="Definir data e horário"
+                          aria-label="Selecionar data"
                         />
                       </div>
                     </div>
@@ -227,25 +275,41 @@ export function ManageEventsModal({ isOpen, onClose }: ManageEventsModalProps) {
                         ))}
                       </select>
                     </div>
-                    <motion.button
-                      type="submit"
-                      disabled={Boolean(savingMessage)}
-                      whileHover={!savingMessage ? { scale: 1.01 } : undefined}
-                      whileTap={!savingMessage ? { scale: 0.99 } : undefined}
-                      className="w-full h-12 flex items-center justify-center gap-2 rounded-2xl bg-indigo-500 text-white font-semibold text-sm hover:bg-indigo-600 disabled:opacity-80 transition-colors"
-                    >
-                      {savingMessage ? (
-                        <>
-                          <Loader2 size={18} strokeWidth={2} className="animate-spin" />
-                          Adicionar evento
-                        </>
-                      ) : (
-                        <>
-                          <Plus size={18} strokeWidth={2} />
-                          Adicionar evento
-                        </>
+                    <div className="flex gap-2">
+                      {editingEvent && (
+                        <motion.button
+                          type="button"
+                          onClick={handleCancelEdit}
+                          whileHover={{ scale: 1.01 }}
+                          whileTap={{ scale: 0.99 }}
+                          className="flex-1 h-12 flex items-center justify-center gap-2 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 font-semibold text-sm hover:bg-slate-50 dark:hover:bg-white/10 transition-colors"
+                        >
+                          Cancelar
+                        </motion.button>
                       )}
-                    </motion.button>
+                      <motion.button
+                        type="submit"
+                        disabled={Boolean(savingMessage)}
+                        whileHover={!savingMessage ? { scale: 1.01 } : undefined}
+                        whileTap={!savingMessage ? { scale: 0.99 } : undefined}
+                        className={`${editingEvent ? 'flex-1' : 'w-full'} h-12 flex items-center justify-center gap-2 rounded-2xl bg-indigo-500 text-white font-semibold text-sm hover:bg-indigo-600 disabled:opacity-80 transition-colors`}
+                      >
+                        {savingMessage ? (
+                          <>
+                            <Loader2 size={18} strokeWidth={2} className="animate-spin" />
+                            {editingEvent ? 'Salvando...' : 'Adicionar evento'}
+                          </>
+                        ) : (
+                          <>
+                            {editingEvent ? (
+                              <><Pencil size={18} strokeWidth={2} /> Salvar alterações</>
+                            ) : (
+                              <><Plus size={18} strokeWidth={2} /> Adicionar evento</>
+                            )}
+                          </>
+                        )}
+                      </motion.button>
+                    </div>
                   </form>
                 </section>
 
@@ -278,14 +342,24 @@ export function ManageEventsModal({ isOpen, onClose }: ManageEventsModalProps) {
                                 {ev.pontuacao && ` · ${ev.pontuacao}`}
                               </p>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => removeEvento(ev.id)}
-                              className="p-2.5 rounded-xl text-slate-400 dark:text-zinc-500 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                              aria-label={`Excluir ${ev.titulo}`}
-                            >
-                              <Trash2 size={18} strokeWidth={2} />
-                            </button>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => setEditingEvent(ev)}
+                                className="p-2.5 rounded-xl text-slate-400 dark:text-zinc-500 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                                aria-label={`Editar ${ev.titulo}`}
+                              >
+                                <Pencil size={18} strokeWidth={2} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => removeEvento(ev.id)}
+                                className="p-2.5 rounded-xl text-slate-400 dark:text-zinc-500 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                                aria-label={`Excluir ${ev.titulo}`}
+                              >
+                                <Trash2 size={18} strokeWidth={2} />
+                              </button>
+                            </div>
                           </motion.li>
                         ))
                       )}

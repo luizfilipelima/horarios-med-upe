@@ -60,14 +60,12 @@ Para ambiente **local** (se usar `supabase start`), elas são injetadas automati
 ```bash
 supabase functions deploy criar-delegado
 supabase functions deploy listar-delegados
+supabase functions deploy aprovar-solicitacao --no-verify-jwt
+supabase functions deploy rejeitar-solicitacao --no-verify-jwt
+supabase functions deploy listar-solicitacoes-pendentes --no-verify-jwt
 ```
 
-Ou, para implantar ambas de uma vez:
-
-```bash
-supabase functions deploy criar-delegado
-supabase functions deploy listar-delegados
-```
+A função `aprovar-solicitacao` aprova cadastros de delegados e vincula ao perfil/turma. As funções `rejeitar-solicitacao` e `listar-solicitacoes-pendentes` integram a caixa de entrada do painel CEO.
 
 A saída esperada deve indicar o sucesso de cada função, por exemplo:
 
