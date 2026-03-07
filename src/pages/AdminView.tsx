@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BarChart3,
@@ -13,6 +13,7 @@ import {
   Loader2,
   Link2,
   Check,
+  MoreVertical,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -36,19 +37,20 @@ interface Turma {
 interface KPI {
   turmas: number;
   delegados: number;
+  alunos: number;
   aulas: number;
   eventos: number;
 }
 
 const inputClass =
-  'w-full rounded-2xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 text-sm text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-600 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500/40 focus:outline-none transition-shadow';
+  'w-full rounded-2xl border border-white/10 bg-white/5 dark:border-zinc-700 dark:bg-zinc-900 px-4 py-3 text-sm text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-600 focus:ring-2 focus:ring-indigo-500/40 focus:outline-none transition-shadow';
 
 export function AdminView() {
   const { signOut } = useAuth();
   const { enterGodMode } = useGodMode();
   const navigate = useNavigate();
   const [turmas, setTurmas] = useState<Turma[]>([]);
-  const [kpi, setKpi] = useState<KPI>({ turmas: 0, delegados: 0, aulas: 0, eventos: 0 });
+  const [kpi, setKpi] = useState<KPI>({ turmas: 0, delegados: 0, alunos: 0, aulas: 0, eventos: 0 });
   const [loading, setLoading] = useState(true);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [addNome, setAddNome] = useState('');
@@ -58,21 +60,45 @@ export function AdminView() {
   const [inviteCopiedId, setInviteCopiedId] = useState<string | null>(null);
   const [editModalTurma, setEditModalTurma] = useState<Turma | null>(null);
   const [delegadosModalTurma, setDelegadosModalTurma] = useState<Turma | null>(null);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [alunosByTurmaId, setAlunosByTurmaId] = useState<Record<string, number>>({});
+  const [toastCopied, setToastCopied] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [tituloByTurmaId, setTituloByTurmaId] = useState<Record<string, string>>({});
 
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpenDropdownId(null);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const loadData = async () => {
     setLoading(true);
-    const [turmasRes, configsRes, perfisRes, aulasRes, eventosRes] = await Promise.all([
+    const [
+      turmasRes,
+      configsRes,
+      perfisRes,
+      aulasRes,
+      eventosRes,
+      convitesRes,
+      convitesByTurmaRes,
+    ] = await Promise.all([
       supabaseClient.from('turmas').select('id, nome, faculdade, slug_url, created_at').order('created_at', { ascending: false }),
       supabaseClient.from('configuracoes').select('turma_id, titulo'),
       supabaseClient.from('perfis').select('id, role, status').eq('role', 'delegado'),
       supabaseClient.from('aulas').select('id', { count: 'exact', head: true }),
       supabaseClient.from('eventos').select('id', { count: 'exact', head: true }),
+      supabaseClient.from('convites').select('id', { count: 'exact', head: true }).eq('usado', true),
+      supabaseClient
+        .from('convites')
+        .select('turma_id')
+        .eq('usado', true),
     ]);
-    if (turmasRes.error) {
-      console.error('Erro ao carregar turmas:', turmasRes.error);
-    }
     const turmasData = (turmasRes.data ?? []) as Turma[];
     setTurmas(turmasData);
     const tituloMap: Record<string, string> = {};
@@ -85,9 +111,17 @@ export function AdminView() {
     const delegadosAprovados = (perfisRes.data ?? []).filter(
       (p: { status?: string }) => p.status !== 'pendente' && p.status !== 'rejeitado'
     ).length;
+    const alunosMap: Record<string, number> = {};
+    if (convitesByTurmaRes.data && Array.isArray(convitesByTurmaRes.data)) {
+      for (const row of convitesByTurmaRes.data as Array<{ turma_id: string }>) {
+        if (row.turma_id) alunosMap[row.turma_id] = (alunosMap[row.turma_id] ?? 0) + 1;
+      }
+    }
+    setAlunosByTurmaId(alunosMap);
     setKpi({
       turmas: turmasData.length,
       delegados: delegadosAprovados,
+      alunos: convitesRes.count ?? 0,
       aulas: aulasRes.count ?? 0,
       eventos: eventosRes.count ?? 0,
     });
@@ -125,16 +159,15 @@ export function AdminView() {
       array_de_grupos: ['Grupo 1'],
     });
     setAddSaving(false);
-    if (!errTurma) {
-      setAddModalOpen(false);
-      setAddNome('');
-      setAddFaculdade('');
-      setAddSlug('');
-      loadData();
-    }
+    setAddModalOpen(false);
+    setAddNome('');
+    setAddFaculdade('');
+    setAddSlug('');
+    loadData();
   };
 
   const handleModoDeus = (turmaId: string) => {
+    setOpenDropdownId(null);
     enterGodMode(turmaId);
     navigate('/delegado');
   };
@@ -150,28 +183,38 @@ export function AdminView() {
     try {
       await navigator.clipboard.writeText(url);
       setInviteCopiedId(turmaId);
-      setTimeout(() => setInviteCopiedId(null), 2500);
+      setToastCopied(true);
+      setTimeout(() => {
+        setInviteCopiedId(null);
+        setToastCopied(false);
+      }, 2500);
     } catch {
       setInviteCopiedId(null);
     }
   };
 
+  const kpiItems = [
+    { label: 'Turmas', value: kpi.turmas, icon: BarChart3 },
+    { label: 'Delegados', value: kpi.delegados, icon: Users },
+    { label: 'Alunos Ativos', value: kpi.alunos, icon: Users },
+    { label: 'Aulas', value: kpi.aulas, icon: BookOpen },
+    { label: 'Eventos', value: kpi.eventos, icon: Calendar },
+  ];
+
   return (
-    <div className="min-h-screen bg-[#f8f7f5] dark:bg-zinc-950 transition-colors duration-300 max-w-4xl mx-auto px-5">
+    <div className="min-h-screen bg-slate-950 text-slate-50 antialiased">
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="pt-12 pb-6 flex items-center justify-between"
+        className="sticky top-0 z-30 backdrop-blur-xl bg-slate-950/80 border-b border-white/5 px-4 sm:px-6 py-4 flex items-center justify-between"
       >
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-2xl bg-indigo-500 flex items-center justify-center shadow-md shadow-indigo-200 dark:shadow-indigo-950">
-            <BarChart3 size={18} className="text-white" strokeWidth={2} />
+          <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center">
+            <BarChart3 size={20} className="text-indigo-400" strokeWidth={2} />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100">
-              Gradly — Painel do CEO
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-zinc-500">Business Intelligence</p>
+            <h1 className="text-lg font-bold tracking-tight text-white">Gradly — Painel CEO</h1>
+            <p className="text-xs text-slate-400">Business Intelligence</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -179,7 +222,7 @@ export function AdminView() {
           <Link
             to="/login"
             onClick={() => signOut()}
-            className="p-2 rounded-2xl bg-white dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 text-slate-400 hover:text-red-400 hover:border-red-500/30 transition-colors"
             aria-label="Sair"
           >
             <LogOut size={20} strokeWidth={2} />
@@ -187,159 +230,194 @@ export function AdminView() {
         </div>
       </motion.header>
 
-      {/* KPIs */}
-      <motion.section
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8"
-      >
-        {[
-          { label: 'Total de Turmas', value: kpi.turmas, icon: BarChart3 },
-          { label: 'Total de Delegados', value: kpi.delegados, icon: Users },
-          { label: 'Total de Aulas', value: kpi.aulas, icon: BookOpen },
-          { label: 'Total de Eventos', value: kpi.eventos, icon: Calendar },
-        ].map((item, i) => (
-          <motion.div
-            key={item.label}
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 + i * 0.05 }}
-            className="rounded-2xl bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 p-4 shadow-sm"
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <item.icon size={18} className="text-indigo-500 dark:text-indigo-400" strokeWidth={2} />
-              <span className="text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">
-                {item.label}
-              </span>
+      {/* Toast Copiado */}
+        <AnimatePresence>
+          {toastCopied && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl bg-emerald-500/90 backdrop-blur-md border border-emerald-400/30 shadow-lg"
+            >
+              <Check size={20} className="text-white" strokeWidth={2} />
+              <span className="text-sm font-medium text-white">Link copiado para a área de transferência</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-10">
+        {/* BI Grid */}
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4"
+        >
+          {kpiItems.map((item, i) => (
+            <motion.div
+              key={item.label}
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1 + i * 0.04 }}
+              className="rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 p-4 sm:p-5"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <item.icon size={18} className="text-indigo-400 shrink-0" strokeWidth={2} />
+                <span className="text-xs font-medium text-slate-400 uppercase tracking-wider truncate">
+                  {item.label}
+                </span>
+              </div>
+              <p className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+                {loading ? '—' : item.value}
+              </p>
+            </motion.div>
+          ))}
+        </motion.section>
+
+        <SolicitacoesPendentesSection onSuccess={loadData} />
+
+        {/* Lista de Turmas */}
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+        >
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-bold text-white">Turmas</h2>
+            <motion.button
+              type="button"
+              onClick={() => setAddModalOpen(true)}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-500 text-white font-semibold text-sm hover:bg-indigo-600 shadow-lg shadow-indigo-500/20 transition-colors"
+            >
+              <Plus size={18} strokeWidth={2} />
+              Nova Turma
+            </motion.button>
+          </div>
+
+          {loading ? (
+            <div className="flex justify-center py-16">
+              <Loader2 size={32} className="text-indigo-500 animate-spin" strokeWidth={2} />
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">
-              {loading ? '—' : item.value}
-            </p>
-          </motion.div>
-        ))}
-      </motion.section>
+          ) : turmas.length === 0 ? (
+            <div className="rounded-3xl bg-white/5 backdrop-blur-md border border-white/10 py-16 text-center text-slate-400">
+              Nenhuma turma cadastrada.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {turmas.map((t) => (
+                <motion.div
+                  key={t.id}
+                  layout
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-white truncate">
+                      {tituloByTurmaId[t.id] ?? t.nome}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-slate-400">
+                      <span>{t.faculdade || '—'}</span>
+                      <span className="font-mono text-indigo-400">/t/{t.slug_url}</span>
+                      <span>· {alunosByTurmaId[t.id] ?? 0} alunos</span>
+                    </div>
+                  </div>
 
-      <SolicitacoesPendentesSection onSuccess={loadData} />
+                  <div className="flex items-center gap-2 shrink-0">
+                    {/* Botão Copiar Convite - 44x44 min touch target */}
+                    <motion.button
+                      type="button"
+                      onClick={() => handleGerarConvite(t.id)}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-2xl font-medium text-sm transition-colors ${
+                        inviteCopiedId === t.id
+                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                          : 'bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 hover:border-indigo-500/30'
+                      }`}
+                      aria-label={inviteCopiedId === t.id ? 'Link copiado!' : 'Copiar link de convite'}
+                      title={inviteCopiedId === t.id ? 'Copiado!' : 'Gerar e copiar link de convite'}
+                    >
+                      {inviteCopiedId === t.id ? (
+                        <Check size={20} strokeWidth={2} />
+                      ) : (
+                        <Link2 size={20} strokeWidth={2} />
+                      )}
+                    </motion.button>
 
-      {/* Lista de Turmas */}
-      <motion.section
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100">Turmas</h2>
-          <motion.button
-            type="button"
-            onClick={() => setAddModalOpen(true)}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-500 text-white font-semibold text-sm shadow-md shadow-indigo-200 dark:shadow-indigo-950 hover:bg-indigo-600 transition-colors"
-          >
-            <Plus size={18} strokeWidth={2} />
-            Adicionar Nova Turma
-          </motion.button>
-        </div>
+                    {/* Menu Dropdown - Ações */}
+                    <div className="relative" ref={openDropdownId === t.id ? dropdownRef : undefined}>
+                      <motion.button
+                        type="button"
+                        onClick={() => setOpenDropdownId(openDropdownId === t.id ? null : t.id)}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
+                        aria-label="Mais opções"
+                      >
+                        <MoreVertical size={20} strokeWidth={2} />
+                      </motion.button>
 
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 size={28} className="text-indigo-500 animate-spin" strokeWidth={2} />
-          </div>
-        ) : turmas.length === 0 ? (
-          <div className="rounded-2xl bg-gray-50 dark:bg-zinc-800/60 border border-gray-100 dark:border-zinc-700 py-12 text-center text-gray-500 dark:text-zinc-500">
-            Nenhuma turma cadastrada.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {turmas.map((t) => (
-              <motion.div
-                key={t.id}
-                layout
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-2xl bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-              >
-                <div className="min-w-0">
-                  <p className="font-semibold text-gray-900 dark:text-zinc-100 truncate">
-                    {tituloByTurmaId[t.id] ?? t.nome}
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-zinc-500">
-                    {t.faculdade} · <span className="font-mono">{t.slug_url}</span>
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                  <motion.button
-                    type="button"
-                    onClick={() => handleGerarConvite(t.id)}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className={`flex items-center gap-2 px-3 py-2.5 rounded-2xl font-medium text-sm transition-colors ${
-                      inviteCopiedId === t.id
-                        ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                        : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-zinc-700'
-                    }`}
-                    aria-label={inviteCopiedId === t.id ? 'Link copiado!' : 'Gerar Link de Convite'}
-                    title={inviteCopiedId === t.id ? 'Link copiado!' : 'Gerar Link de Convite'}
-                  >
-                    {inviteCopiedId === t.id ? (
-                      <>
-                        <Check size={18} strokeWidth={2} />
-                        Link copiado!
-                      </>
-                    ) : (
-                      <>
-                        <Link2 size={18} strokeWidth={2} />
-                        Convite
-                      </>
-                    )}
-                  </motion.button>
-                  <motion.button
-                    type="button"
-                    onClick={() => setEditModalTurma(t)}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="p-2.5 rounded-2xl bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
-                    aria-label="Editar Turma"
-                    title="Editar Turma"
-                  >
-                    <Pencil size={18} strokeWidth={2} />
-                  </motion.button>
-                  <motion.button
-                    type="button"
-                    onClick={() => setDelegadosModalTurma(t)}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="p-2.5 rounded-2xl bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
-                    aria-label="Criar Delegado"
-                    title="Gerenciar Delegados"
-                  >
-                    <UserPlus size={18} strokeWidth={2} />
-                  </motion.button>
-                  <motion.button
-                    type="button"
-                    onClick={() => handleModoDeus(t.id)}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="flex items-center gap-2 px-3 py-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-medium text-sm hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors"
-                  >
-                    <Eye size={18} strokeWidth={2} />
-                    Modo Deus
-                  </motion.button>
-                  <a
-                    href={`/t/${t.slug_url}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
-                  >
-                    /t/{t.slug_url}
-                  </a>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
-      </motion.section>
+                      <AnimatePresence>
+                        {openDropdownId === t.id && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -4 }}
+                            className="absolute right-0 top-full mt-2 py-2 w-48 rounded-2xl bg-slate-900 border border-white/10 shadow-xl z-50"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditModalTurma(t);
+                                setOpenDropdownId(null);
+                              }}
+                              className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-300 hover:bg-white/5 hover:text-white"
+                            >
+                              <Pencil size={16} strokeWidth={2} />
+                              Editar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDelegadosModalTurma(t);
+                                setOpenDropdownId(null);
+                              }}
+                              className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-300 hover:bg-white/5 hover:text-white"
+                            >
+                              <UserPlus size={16} strokeWidth={2} />
+                              Gerenciar Delegados
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleModoDeus(t.id)}
+                              className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm text-indigo-400 hover:bg-indigo-500/10"
+                            >
+                              <Eye size={16} strokeWidth={2} />
+                              Modo Deus
+                            </button>
+                            <a
+                              href={`/t/${t.slug_url}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-300 hover:bg-white/5 hover:text-white"
+                            >
+                              <Link2 size={16} strokeWidth={2} />
+                              Abrir turma
+                            </a>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </motion.section>
+      </main>
 
       {/* Modal Adicionar Turma */}
       <AnimatePresence>
@@ -349,7 +427,7 @@ export function AdminView() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
               onClick={() => setAddModalOpen(false)}
               aria-hidden
             />
@@ -360,18 +438,14 @@ export function AdminView() {
                 exit={{ opacity: 0, y: 16 }}
                 transition={{ type: 'spring', damping: 28, stiffness: 300 }}
                 onClick={(e) => e.stopPropagation()}
-                className="pointer-events-auto w-full max-w-md rounded-3xl bg-white dark:bg-zinc-900 shadow-xl dark:border dark:border-zinc-800 overflow-hidden"
+                className="pointer-events-auto w-full max-w-md rounded-3xl bg-slate-900 border border-white/10 shadow-2xl overflow-hidden"
               >
-                <div className="px-5 py-4 border-b border-gray-100 dark:border-zinc-800">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-zinc-100">
-                    Nova Turma
-                  </h3>
+                <div className="px-6 py-4 border-b border-white/10">
+                  <h3 className="text-lg font-bold text-white">Nova Turma</h3>
                 </div>
-                <form onSubmit={handleAddTurma} className="p-5 space-y-4">
+                <form onSubmit={handleAddTurma} className="p-6 space-y-4">
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                      Nome
-                    </label>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Nome</label>
                     <input
                       type="text"
                       value={addNome}
@@ -382,9 +456,7 @@ export function AdminView() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                      Faculdade
-                    </label>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Faculdade</label>
                     <input
                       type="text"
                       value={addFaculdade}
@@ -394,9 +466,7 @@ export function AdminView() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                      Slug (URL)
-                    </label>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Slug (URL)</label>
                     <input
                       type="text"
                       value={addSlug}
@@ -405,17 +475,15 @@ export function AdminView() {
                       className={inputClass}
                       required
                     />
-                    <p className="text-xs text-gray-500 dark:text-zinc-500 mt-1">
-                      URL da turma: /t/{addSlug.trim() || 'slug'}
-                    </p>
+                    <p className="text-xs text-slate-500 mt-1">/t/{addSlug.trim() || 'slug'}</p>
                   </div>
-                  <div className="flex gap-2 pt-2">
+                  <div className="flex gap-3 pt-2">
                     <motion.button
                       type="button"
                       onClick={() => setAddModalOpen(false)}
                       whileHover={{ scale: 1.01 }}
                       whileTap={{ scale: 0.99 }}
-                      className="flex-1 py-3 rounded-2xl bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 font-semibold text-sm"
+                      className="flex-1 py-3 rounded-2xl bg-white/5 border border-white/10 text-slate-300 font-semibold text-sm hover:bg-white/10"
                     >
                       Cancelar
                     </motion.button>
@@ -426,11 +494,7 @@ export function AdminView() {
                       whileTap={!addSaving ? { scale: 0.99 } : undefined}
                       className="flex-1 py-3 rounded-2xl bg-indigo-500 text-white font-semibold text-sm disabled:opacity-70 flex items-center justify-center gap-2"
                     >
-                      {addSaving ? (
-                        <Loader2 size={18} className="animate-spin" strokeWidth={2} />
-                      ) : (
-                        'Criar'
-                      )}
+                      {addSaving ? <Loader2 size={18} className="animate-spin" strokeWidth={2} /> : 'Criar'}
                     </motion.button>
                   </div>
                 </form>
@@ -440,19 +504,8 @@ export function AdminView() {
         )}
       </AnimatePresence>
 
-      <EditTurmaModal
-        turma={editModalTurma}
-        isOpen={editModalTurma !== null}
-        onClose={() => setEditModalTurma(null)}
-        onSuccess={loadData}
-      />
-
-      <GerenciarDelegadosModal
-        turma={delegadosModalTurma}
-        isOpen={delegadosModalTurma !== null}
-        onClose={() => setDelegadosModalTurma(null)}
-        onSuccess={loadData}
-      />
+      <EditTurmaModal turma={editModalTurma} isOpen={editModalTurma !== null} onClose={() => setEditModalTurma(null)} onSuccess={loadData} />
+      <GerenciarDelegadosModal turma={delegadosModalTurma} isOpen={delegadosModalTurma !== null} onClose={() => setDelegadosModalTurma(null)} onSuccess={loadData} />
 
       <Footer />
     </div>

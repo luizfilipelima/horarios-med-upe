@@ -11,10 +11,9 @@
 
 const RESEND_API_URL = "https://api.resend.com/emails";
 
-export const corsHeaders = {
+const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS, GET",
 };
 
 const FROM_EMAIL = "onboarding@resend.dev"; // Para testes. Em produção: noreply@seudominio.com
@@ -59,7 +58,7 @@ function buildApprovedHtml(nome: string, turma: string, link: string): string {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { status: 200, headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
@@ -124,14 +123,14 @@ Deno.serve(async (req) => {
       );
     }
 
+    return new Response(JSON.stringify({ ok: true, id: data.id }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (error) {
     return new Response(
-      JSON.stringify({ ok: true, id: data.id }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } catch (e) {
-    return new Response(
-      JSON.stringify({ error: String(e) }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
