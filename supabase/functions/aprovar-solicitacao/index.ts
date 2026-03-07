@@ -141,7 +141,7 @@ Deno.serve(async (req) => {
           link_plataforma: "",
           ativar_sabado: false,
           ativar_domingo: false,
-          idioma_dias: "es",
+          idioma_dias: "pt",
           array_de_grupos: ["Grupo 1"],
         });
 
@@ -153,12 +153,13 @@ Deno.serve(async (req) => {
       }
     }
 
-    const { error: errPerfil } = await supabaseAdmin
+    // Atualiza o perfil do delegado: vincula à turma (criada ou existente) pelo slug que ele definiu
+    const { data: perfilAtualizado, error: errPerfil } = await supabaseAdmin
       .from("perfis")
       .update({ status: "aprovado", turma_id: turmaId })
       .eq("id", perfilId)
-      .eq("role", "delegado")
-      .eq("status", "pendente");
+      .select("id, turma_id")
+      .single();
 
     if (errPerfil) {
       return new Response(
@@ -166,9 +167,15 @@ Deno.serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    if (!perfilAtualizado?.turma_id) {
+      return new Response(
+        JSON.stringify({ error: "Perfil não foi vinculado à turma. Tente novamente." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     return new Response(
-      JSON.stringify({ success: true, turma_id: turmaId }),
+      JSON.stringify({ success: true, turma_id: turmaId, slug_url: slug }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {

@@ -65,7 +65,7 @@ export function SolicitacoesPendentesSection({ onSuccess }: { onSuccess: () => v
         link_plataforma: '',
         ativar_sabado: false,
         ativar_domingo: false,
-        idioma_dias: 'es',
+        idioma_dias: 'pt',
         array_de_grupos: ['Grupo 1'],
       });
 
