@@ -15,6 +15,7 @@ import {
   Link2,
   Check,
   MoreVertical,
+  Inbox,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -24,7 +25,7 @@ import { ThemeToggle } from '../components/ThemeToggle';
 import { Footer } from '../components/Footer';
 import { EditTurmaModal } from '../components/EditTurmaModal';
 import { GerenciarDelegadosModal } from '../components/GerenciarDelegadosModal';
-import { SolicitacoesPendentesSection } from '../components/SolicitacoesPendentesSection';
+import { SolicitacoesPendentesModal } from '../components/SolicitacoesPendentesModal';
 
 interface Turma {
   id: string;
@@ -65,6 +66,8 @@ export function AdminView() {
   const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
   const [alunosByTurmaId, setAlunosByTurmaId] = useState<Record<string, number>>({});
   const [toastCopied, setToastCopied] = useState(false);
+  const [solicitacoesModalOpen, setSolicitacoesModalOpen] = useState(false);
+  const [solicitacoesCount, setSolicitacoesCount] = useState(0);
   const dropdownContentRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
 
@@ -103,6 +106,7 @@ export function AdminView() {
       eventosRes,
       convitesRes,
       convitesByTurmaRes,
+      solicitacoesRes,
     ] = await Promise.all([
       supabaseClient.from('turmas').select('id, nome, faculdade, slug_url, created_at').order('created_at', { ascending: false }),
       supabaseClient.from('configuracoes').select('turma_id, titulo'),
@@ -114,6 +118,7 @@ export function AdminView() {
         .from('convites')
         .select('turma_id')
         .eq('usado', true),
+      supabaseClient.functions.invoke('listar-solicitacoes-pendentes'),
     ]);
     const turmasData = (turmasRes.data ?? []) as Turma[];
     setTurmas(turmasData);
@@ -141,6 +146,8 @@ export function AdminView() {
       aulas: aulasRes.count ?? 0,
       eventos: eventosRes.count ?? 0,
     });
+    const solicitacoes = (solicitacoesRes?.data?.solicitacoes ?? []) as unknown[];
+    setSolicitacoesCount(solicitacoes.length);
     setLoading(false);
   };
 
@@ -235,6 +242,22 @@ export function AdminView() {
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          <motion.button
+            type="button"
+            onClick={() => setSolicitacoesModalOpen(true)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="relative min-w-[44px] min-h-[44px] flex items-center justify-center rounded-2xl bg-white/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 hover:border-indigo-500/30 transition-colors"
+            aria-label="Caixa de entrada"
+            title="Caixa de entrada"
+          >
+            <Inbox size={20} strokeWidth={2} />
+            {solicitacoesCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-amber-500 text-white text-xs font-bold px-1">
+                {solicitacoesCount > 99 ? '99+' : solicitacoesCount}
+              </span>
+            )}
+          </motion.button>
           <Link
             to="/login"
             onClick={() => signOut()}
@@ -289,8 +312,6 @@ export function AdminView() {
             </motion.div>
           ))}
         </motion.section>
-
-        <SolicitacoesPendentesSection onSuccess={loadData} />
 
         {/* Lista de Turmas */}
         <motion.section
@@ -382,10 +403,27 @@ export function AdminView() {
         </motion.section>
       </main>
 
-      {/* Dropdown em Portal — centralizado na tela */}
+      {/* Dropdown em Portal — posicionado à esquerda do botão */}
       {openDropdownId && dropdownRect && (() => {
         const t = turmas.find((x) => x.id === openDropdownId);
         if (!t) return null;
+        const DROPDOWN_WIDTH = 208; // w-52
+        const DROPDOWN_HEIGHT_EST = 220;
+        const GAP = 8;
+        const PADDING = 16;
+        const vw = typeof window !== 'undefined' ? window.innerWidth : 1024;
+        const vh = typeof window !== 'undefined' ? window.innerHeight : 768;
+        // Preferir à esquerda do botão
+        let left = dropdownRect.left - DROPDOWN_WIDTH - GAP;
+        const fitsOnLeft = left >= PADDING;
+        if (!fitsOnLeft) {
+          left = dropdownRect.left + dropdownRect.width + GAP;
+          const fitsOnRight = left + DROPDOWN_WIDTH <= vw - PADDING;
+          if (!fitsOnRight) left = Math.max(PADDING, vw - DROPDOWN_WIDTH - PADDING);
+        }
+        let top = dropdownRect.top;
+        if (top + DROPDOWN_HEIGHT_EST > vh - PADDING) top = vh - DROPDOWN_HEIGHT_EST - PADDING;
+        if (top < PADDING) top = PADDING;
         return createPortal(
           <AnimatePresence>
             <motion.div
@@ -394,7 +432,8 @@ export function AdminView() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
               transition={{ duration: 0.15 }}
-              className="fixed z-[100] py-2 w-52 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-2xl left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+              className="fixed z-[100] py-2 w-52 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-2xl"
+              style={{ left, top }}
             >
               <button
                 type="button"
@@ -534,6 +573,7 @@ export function AdminView() {
 
       <EditTurmaModal turma={editModalTurma} isOpen={editModalTurma !== null} onClose={() => setEditModalTurma(null)} onSuccess={loadData} />
       <GerenciarDelegadosModal turma={delegadosModalTurma} isOpen={delegadosModalTurma !== null} onClose={() => setDelegadosModalTurma(null)} onSuccess={loadData} />
+      <SolicitacoesPendentesModal isOpen={solicitacoesModalOpen} onClose={() => setSolicitacoesModalOpen(false)} onSuccess={loadData} />
 
       <Footer />
     </div>
