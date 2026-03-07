@@ -1,15 +1,12 @@
 /**
  * Supabase Edge Function: send-email
  *
- * Envia e-mails transacionais via Resend.
- * A API Key do Resend fica em variáveis de ambiente do Supabase (nunca no front-end).
+ * Envia e-mails transacionais via Resend (sem uso de banco Supabase).
+ * Chamada sem sessão (pós-signup, aprovação CEO). Requer --no-verify-jwt.
  *
- * DEPLOY:
- *   supabase functions deploy send-email
+ * DEPLOY: supabase functions deploy send-email --no-verify-jwt
  *
- * CONFIGURAR API KEY:
- *   supabase secrets set RESEND_API_KEY=re_xxxxxxxxxxxx
- *   (ou via Dashboard: Project Settings > Edge Functions > Secrets)
+ * CONFIGURAR: supabase secrets set RESEND_API_KEY=re_xxxxxxxxxxxx
  */
 
 const RESEND_API_URL = "https://api.resend.com/emails";

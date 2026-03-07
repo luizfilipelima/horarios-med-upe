@@ -1,3 +1,11 @@
+/**
+ * Edge Function: listar-solicitacoes-pendentes
+ *
+ * Usa SUPABASE_SERVICE_ROLE_KEY para bypass de RLS nas queries.
+ * Deploy com --no-verify-jwt para evitar 401 do API Gateway (o JWT é validado internamente).
+ *
+ * DEPLOY: supabase functions deploy listar-solicitacoes-pendentes --no-verify-jwt
+ */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 export const corsHeaders = {
@@ -30,11 +38,13 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Service Role: bypass RLS nas queries (perfis, auth.admin)
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
+    // Anon + JWT: valida o token e identifica o usuário (CEO)
     const supabaseUser = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
