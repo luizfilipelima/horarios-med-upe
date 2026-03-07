@@ -11,6 +11,7 @@ import {
 import {
   getInitialDayId,
   createEmptySchedule,
+  formatTimeRange,
   type ClassItem,
   type DaySchedule,
   type ClassType,
@@ -66,6 +67,9 @@ interface AppContextValue extends AppState {
   addClass: (dayId: string, classItem: ClassItem) => void;
   removeClass: (dayId: string, index: number) => void;
   updateClass: (dayId: string, index: number, classItem: Partial<ClassItem>) => void;
+  addAula: (aula: Omit<ClassItem, 'id'> & { dia_semana: string }) => void;
+  updateAulaById: (id: string, partial: Partial<ClassItem> & { dia_semana?: string }) => void;
+  removeAulaById: (id: string) => void;
   moveClass: (dayId: string, fromIndex: number, direction: 'up' | 'down') => void;
   getInitialDayId: () => string;
   saveConfig: () => Promise<void>;
@@ -83,19 +87,36 @@ const defaultConfig = {
   array_de_grupos: ['Grupo C.1'],
 };
 
-function mapAulaToClassItem(row: {
+interface AulaRow {
   id: string;
+  dia_semana: string;
   materia: string;
-  horario: string;
+  horario?: string;
+  horario_inicio?: string;
+  horario_fim?: string;
   sala: string;
   professor: string;
   tipo: string;
   grupo_alvo: string;
-}): ClassItem {
+}
+
+function parseHorario(horario: string): { inicio: string; fim: string } | null {
+  if (!horario || !horario.includes('-')) return null;
+  const parts = horario.split(/-/).map((p) => p.trim());
+  if (parts.length >= 2 && parts[0] && parts[1]) return { inicio: parts[0], fim: parts[1] };
+  return null;
+}
+
+function mapAulaToClassItem(row: AulaRow): ClassItem {
+  const inicio = row.horario_inicio ?? parseHorario(row.horario ?? '')?.inicio ?? '08:00';
+  const fim = row.horario_fim ?? parseHorario(row.horario ?? '')?.fim ?? '10:00';
+  const time = formatTimeRange(inicio, fim);
   return {
     id: row.id,
     subject: row.materia ?? '',
-    time: row.horario ?? '',
+    time,
+    horarioInicio: inicio,
+    horarioFim: fim,
     location: row.sala ?? '',
     professor: row.professor ?? '',
     type: (row.tipo as ClassType) ?? 'teoria',
@@ -104,10 +125,14 @@ function mapAulaToClassItem(row: {
 }
 
 function mapClassItemToAulaRow(dayId: string, c: ClassItem, ordem: number) {
+  const inicio = c.horarioInicio ?? parseHorario(c.time)?.inicio ?? '08:00';
+  const fim = c.horarioFim ?? parseHorario(c.time)?.fim ?? '10:00';
   return {
     dia_semana: dayId,
     materia: c.subject,
-    horario: c.time,
+    horario: formatTimeRange(inicio, fim),
+    horario_inicio: inicio,
+    horario_fim: fim,
     sala: c.location,
     professor: c.professor,
     tipo: c.type,
@@ -199,18 +224,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         const scheduleFromAulas = createEmptySchedule();
         if (aulasRes.data && Array.isArray(aulasRes.data)) {
-          for (const row of aulasRes.data as Array<{
-            id: string;
-            dia_semana: string;
-            materia: string;
-            horario: string;
-            sala: string;
-            professor: string;
-            tipo: string;
-            grupo_alvo: string;
-          }>) {
-            const day = scheduleFromAulas.find((d) => d.id === row.dia_semana);
-            if (day) day.classes.push(mapAulaToClassItem(row));
+          const rows = aulasRes.data as AulaRow[];
+          for (const day of scheduleFromAulas) {
+            const aulasDoDia = rows
+              .filter((r) => r.dia_semana === day.id)
+              .sort((a, b) => {
+                const ta = a.horario_inicio ?? parseHorario(a.horario ?? '')?.inicio ?? '00:00';
+                const tb = b.horario_inicio ?? parseHorario(b.horario ?? '')?.inicio ?? '00:00';
+                return ta.localeCompare(tb);
+              });
+            day.classes = aulasDoDia.map(mapAulaToClassItem);
           }
         }
         setSchedule(scheduleFromAulas);
@@ -443,6 +466,67 @@ export function AppProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const updateAulaById = useCallback(
+    async (id: string, partial: Partial<ClassItem> & { dia_semana?: string }) => {
+      let found: { dayId: string; index: number; item: ClassItem } | null = null;
+      for (const day of schedule) {
+        const idx = day.classes.findIndex((c) => c.id === id);
+        if (idx >= 0) {
+          found = { dayId: day.id, index: idx, item: day.classes[idx]! };
+          break;
+        }
+      }
+      if (!found) return;
+      const { dia_semana: newDia, ...rest } = partial;
+      const merged: ClassItem = {
+        ...found.item,
+        ...rest,
+        horarioInicio: rest.horarioInicio ?? found.item.horarioInicio ?? parseHorario(found.item.time)?.inicio ?? '08:00',
+        horarioFim: rest.horarioFim ?? found.item.horarioFim ?? parseHorario(found.item.time)?.fim ?? '10:00',
+      };
+      merged.time = formatTimeRange(merged.horarioInicio!, merged.horarioFim!);
+
+      const needMove = newDia && newDia !== found.dayId;
+      if (needMove) {
+        const remaining = schedule.find((d) => d.id === found!.dayId)!.classes.filter((_, i) => i !== found!.index);
+        const newDayClasses = [...(schedule.find((d) => d.id === newDia)!.classes), { ...merged, id: found.item.id }];
+        setSchedule((prev) =>
+          prev.map((d) => {
+            if (d.id === found!.dayId) return { ...d, classes: remaining };
+            if (d.id === newDia) return { ...d, classes: newDayClasses.sort((a, b) => (a.horarioInicio ?? '00:00').localeCompare(b.horarioInicio ?? '00:00')) };
+            return d;
+          })
+        );
+      } else {
+        setSchedule((prev) =>
+          prev.map((d) => {
+            if (d.id !== found!.dayId) return d;
+            const next = [...d.classes];
+            if (next[found!.index]) next[found!.index] = { ...next[found!.index]!, ...merged };
+            return { ...d, classes: next };
+          })
+        );
+      }
+
+      if (!SUPABASE_ENABLED || !turmaId || String(found.item.id).startsWith('temp-')) return;
+      const row: Record<string, unknown> = {
+        materia: merged.subject,
+        horario: merged.time,
+        horario_inicio: merged.horarioInicio,
+        horario_fim: merged.horarioFim,
+        sala: merged.location,
+        professor: merged.professor,
+        tipo: merged.type,
+        grupo_alvo: merged.grupoAlvo,
+      };
+      if (needMove && newDia) row.dia_semana = newDia;
+      supabaseClient.from('aulas').update(row).eq('id', found.item.id).eq('turma_id', turmaId).then(({ error }) => {
+        if (error) showToast('Falha ao salvar. Tente novamente.');
+      });
+    },
+    [schedule, turmaId, showToast]
+  );
+
   const moveClass = useCallback(
     async (dayId: string, fromIndex: number, direction: 'up' | 'down') => {
       const day = schedule.find((d) => d.id === dayId);
@@ -595,6 +679,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [schedule, turmaId, showToast]
   );
 
+  const addAula = useCallback(
+    (aula: Omit<ClassItem, 'id'> & { dia_semana: string }) => {
+      const { dia_semana, ...rest } = aula;
+      const classItem: ClassItem = {
+        ...rest,
+        time: formatTimeRange(rest.horarioInicio ?? '08:00', rest.horarioFim ?? '10:00'),
+      };
+      addClass(dia_semana, classItem);
+    },
+    [addClass]
+  );
+
+  const removeAulaById = useCallback(
+    (id: string) => {
+      for (let d = 0; d < schedule.length; d++) {
+        const idx = schedule[d].classes.findIndex((c) => c.id === id);
+        if (idx >= 0) {
+          removeClass(schedule[d].id, idx);
+          return;
+        }
+      }
+    },
+    [schedule, removeClass]
+  );
+
   const saveConfig = useCallback(async () => {
     await persistConfig();
   }, [persistConfig]);
@@ -629,6 +738,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addClass,
       removeClass,
       updateClass,
+      addAula,
+      updateAulaById,
+      removeAulaById,
       moveClass,
       getInitialDayId,
       saveConfig,
@@ -662,6 +774,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addClass,
       removeClass,
       updateClass,
+      addAula,
+      updateAulaById,
+      removeAulaById,
       moveClass,
       getInitialDayId,
       saveConfig,

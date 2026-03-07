@@ -7,7 +7,12 @@ export interface ClassItem {
   /** UUID no Supabase; presente quando a aula veio do banco */
   id?: string;
   subject: string;
+  /** Formato "08:00 - 10:00" (derivado de horarioInicio/horarioFim ou legado) */
   time: string;
+  /** Horário de início HH:mm (ex: 08:00) */
+  horarioInicio?: string;
+  /** Horário de fim HH:mm (ex: 10:00) */
+  horarioFim?: string;
   location: string;
   professor: string;
   type: ClassType;
@@ -183,6 +188,16 @@ export const initialScheduleWithWeekend: DaySchedule[] = [
   sabado,
   domingo,
 ];
+
+/** Dia da semana (id usado no banco e na UI) */
+export const DIAS_SEMANA = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'] as const;
+export type DiaSemanaId = (typeof DIAS_SEMANA)[number];
+
+/** Constrói string de tempo "HH:mm - HH:mm" a partir de início e fim */
+export function formatTimeRange(horarioInicio: string, horarioFim: string): string {
+  if (!horarioInicio || !horarioFim) return '';
+  return `${horarioInicio} - ${horarioFim}`;
+}
 
 /** Ordem dos 7 dias para montar o cronograma a partir do banco */
 export const DAYS_ORDER: { id: string; label: string; shortLabel: string }[] = [

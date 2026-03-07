@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, Plus, Trash2, Loader2 } from 'lucide-react';
+import { X, Plus, Trash2, Loader2, CalendarClock } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import type { EventoTipo } from '../context/AppContext';
 
@@ -123,12 +123,36 @@ export function ManageEventsModal({ isOpen, onClose }: ManageEventsModalProps) {
                         placeholder="Matéria"
                         className={inputClass}
                       />
-                      <input
-                        type="datetime-local"
-                        value={data}
-                        onChange={(e) => setData(e.target.value)}
-                        className={inputClass}
-                      />
+                      <div className="relative">
+                        <div
+                          className={`flex items-center gap-3 ${inputClass} pointer-events-none min-h-[44px]`}
+                          aria-hidden
+                        >
+                          <CalendarClock
+                            size={18}
+                            className="text-gray-400 dark:text-zinc-500 shrink-0"
+                            strokeWidth={2}
+                          />
+                          <span
+                            className={
+                              data
+                                ? 'text-gray-900 dark:text-zinc-100'
+                                : 'text-gray-400 dark:text-zinc-600'
+                            }
+                          >
+                            {data
+                              ? formatEventDate(new Date(data).toISOString())
+                              : 'Definir data e horário'}
+                          </span>
+                        </div>
+                        <input
+                          type="datetime-local"
+                          value={data}
+                          onChange={(e) => setData(e.target.value)}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer min-h-[44px]"
+                          aria-label="Definir data e horário"
+                        />
+                      </div>
                       <input
                         type="text"
                         value={pontuacao}

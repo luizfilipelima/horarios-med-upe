@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, Plus, Check, Loader2 } from 'lucide-react';
+import { X, Plus, Check, Loader2, CalendarDays } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Toggle } from './Toggle';
+import { ManageScheduleModal } from './ManageScheduleModal';
 
 const inputClass =
   'w-full rounded-2xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 text-sm text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-600 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500/40 focus:border-indigo-300 dark:focus:border-indigo-500/50 focus:outline-none transition-shadow';
@@ -36,6 +37,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   } = useApp();
 
   const [newGroupName, setNewGroupName] = useState('');
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
 
   return (
     <AnimatePresence>
@@ -114,6 +116,24 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       className={inputClass}
                     />
                   </div>
+                </section>
+
+                {/* Sessão: Gerenciar Horários (Matérias) */}
+                <section>
+                  <label className={sectionLabelClass}>Horários e Matérias</label>
+                  <motion.button
+                    type="button"
+                    onClick={() => setScheduleModalOpen(true)}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    className="w-full flex items-center justify-center gap-2 py-4 px-4 rounded-2xl border-2 border-dashed border-indigo-200 dark:border-indigo-500/40 bg-indigo-50/50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 font-semibold text-sm hover:border-indigo-300 dark:hover:border-indigo-500/60 hover:bg-indigo-100/50 dark:hover:bg-indigo-500/15 transition-colors"
+                  >
+                    <CalendarDays size={20} strokeWidth={2} />
+                    Gerenciar Horários
+                  </motion.button>
+                  <p className="mt-2 text-xs text-gray-500 dark:text-zinc-500">
+                    Adicionar, editar ou excluir matérias por dia da semana
+                  </p>
                 </section>
 
                 {/* Sessão 3: Dias da Semana */}
@@ -216,6 +236,10 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </div>
             </motion.div>
           </div>
+          <ManageScheduleModal
+            isOpen={scheduleModalOpen}
+            onClose={() => setScheduleModalOpen(false)}
+          />
         </>
       )}
     </AnimatePresence>
