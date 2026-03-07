@@ -8,7 +8,7 @@
     "dev": "vite",
     "generate:og-image": "node scripts/generate-og-image.mjs",
     "generate:pwa-icons": "node scripts/generate-pwa-icons.mjs",
-    "build": "npm run generate:og-image && npm run generate:pwa-icons && tsc -b && vite build",
+    "build": "npm run generate:og-image && npm run generate:pwa-icons && node scripts/generate-sitemap.mjs && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },

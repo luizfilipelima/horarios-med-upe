@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -18,23 +18,62 @@
     <meta name="theme-color" content="#f8f7f5" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <title>Gradly</title>
-    <meta name="description" content="Gradly – App de horários para alunos, delegados e administradores." />
+
+    <!-- SEO: Título e descrição -->
+    <title>Gradly | A sua faculdade, finalmente organizada</title>
+    <link rel="canonical" href="{{SITE_URL}}/" />
+    <meta name="description" content="Otimize sua rotina acadêmica com o Gradly. O painel definitivo para horários, links e avaliações universitárias. Student schedule planner & Organizador de horários para medicina." />
+    <meta name="keywords" content="Gradly, organização faculdade, horários medicina, student schedule planner, university dashboard, organizador de horarios universidad, app para estudiantes, PWA, calendário acadêmico, UPE, faculdade de medicina" />
+    <meta name="robots" content="index, follow" />
+
     <!-- Open Graph (Facebook, WhatsApp, LinkedIn) -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Gradly" />
-    <meta property="og:description" content="Gradly – App de horários para alunos, delegados e administradores." />
+    <meta property="og:title" content="Gradly | A sua faculdade, finalmente organizada" />
+    <meta property="og:description" content="Otimize sua rotina acadêmica com o Gradly. O painel definitivo para horários, links e avaliações universitárias. Student schedule planner & Organizador de horários para medicina." />
     <meta property="og:image" content="{{SITE_URL}}/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:url" content="{{SITE_URL}}/" />
     <meta property="og:site_name" content="Gradly" />
+    <meta property="og:locale" content="pt_BR" />
+
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Gradly" />
-    <meta name="twitter:description" content="Gradly – App de horários para alunos, delegados e administradores." />
+    <meta name="twitter:title" content="Gradly | A sua faculdade, finalmente organizada" />
+    <meta name="twitter:description" content="Otimize sua rotina acadêmica com o Gradly. O painel definitivo para horários, links e avaliações universitárias." />
     <meta name="twitter:image" content="{{SITE_URL}}/og-image.png" />
+
+    <!-- JSON-LD Structured Data (Schema.org) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Gradly",
+      "applicationCategory": "EducationalApplication",
+      "operatingSystem": "All",
+      "description": "O Gradly é o painel definitivo para organização universitária. Otimize sua rotina acadêmica com horários, links de aula, avaliações e calendário. Ideal para estudantes de medicina e delegados de turma. Student schedule planner, university dashboard, organizador de horários.",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "BRL"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "Gradly"
+      }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Gradly",
+      "url": "{{SITE_URL}}/",
+      "description": "A sua faculdade, finalmente organizada. Painel de horários, links e avaliações universitárias."
+    }
+    </script>
+
     <style>
       #root { min-height: 100vh; min-width: 100%; display: flex; align-items: center; justify-content: center; }
       #root:empty::after { content: ''; }

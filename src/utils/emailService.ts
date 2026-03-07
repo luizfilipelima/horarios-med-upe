@@ -39,11 +39,12 @@ export async function sendApprovalEmail(
   email: string,
   nome: string,
   turma: string,
-  link: string
+  link: string,
+  turmaUrl?: string
 ): Promise<{ ok: boolean; error?: string }> {
   try {
     const { data, error } = await supabaseClient.functions.invoke('send-email', {
-      body: { type: 'approved', email, nome, turma, link },
+      body: { type: 'approved', email, nome, turma, link, turmaUrl },
     });
 
     if (error) return { ok: false, error: error.message };

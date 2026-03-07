@@ -1,0 +1,12 @@
+# Gradly - Permite rastreamento global, bloqueia rotas privadas
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /t/
+Disallow: /login
+Disallow: /cadastro
+Disallow: /register
+Disallow: /update-password
+Disallow: /convite/
+
+Sitemap: /sitemap.xml

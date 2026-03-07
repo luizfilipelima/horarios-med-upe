@@ -17,7 +17,8 @@ export function LandingPage() {
     <div className="min-h-screen bg-slate-950 text-slate-50 antialiased">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4 bg-slate-950/80 backdrop-blur-md">
-        <Link to="/" className="flex items-center shrink-0" aria-label="Gradly">
+        <Link to="/" className="flex items-center shrink-0" aria-label="Gradly - Página inicial">
+          <img src="/gradly.svg" alt="Gradly Logo - Organizador de Horários" className="sr-only" width="140" height="36" />
           <div
             className="h-9 w-[140px] shrink-0"
             style={{
@@ -136,18 +137,18 @@ export function LandingPage() {
                   desc: 'Drive, Zoom, Syllabus e materiais da matéria centralizados a um clique de distância.',
                 },
               ].map((item, i) => (
-                <motion.div
+                <motion.article
                   key={item.title}
                   {...fadeInUp}
                   transition={{ ...fadeInUp.transition, delay: i * 0.08 }}
                   className="rounded-3xl bg-white/5 backdrop-blur-md border border-white/10 p-6 sm:p-8 shadow-2xl shadow-indigo-500/5 hover:border-indigo-500/20 hover:shadow-indigo-500/10 transition-colors"
                 >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/20 text-indigo-400 mb-4">
-                    <item.icon size={22} strokeWidth={2} />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/20 text-indigo-400 mb-4" aria-hidden="true">
+                    <item.icon size={22} strokeWidth={2} aria-hidden="true" />
                   </div>
-                  <h3 className="text-lg font-semibold text-slate-50 mb-2">{item.title}</h3>
+                  <h2 className="text-lg font-semibold text-slate-50 mb-2">{item.title}</h2>
                   <p className="text-sm text-slate-400 leading-relaxed">{item.desc}</p>
-                </motion.div>
+                </motion.article>
               ))}
             </div>
           </div>
@@ -183,7 +184,8 @@ export function LandingPage() {
         {/* Footer */}
         <footer className="py-8 px-4 sm:px-6 lg:px-8 border-t border-white/5">
           <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-            <Link to="/" className="flex items-center" aria-label="Gradly">
+            <Link to="/" className="flex items-center" aria-label="Gradly - Página inicial">
+              <img src="/gradly.svg" alt="Gradly Logo - Organizador de Horários" className="sr-only" width="100" height="25" />
               <div
                 className="h-7 w-[100px] shrink-0 opacity-80"
                 style={{

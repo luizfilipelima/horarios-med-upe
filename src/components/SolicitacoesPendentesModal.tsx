@@ -78,13 +78,16 @@ export function SolicitacoesPendentesModal({ isOpen, onClose, onSuccess }: Solic
       setSolicitacoes((prev) => prev.filter((x) => x.id !== s.id));
       onSuccess();
 
-      const loginUrl = typeof window !== 'undefined' ? `${window.location.origin}/login` : '/login';
+      const base = typeof window !== 'undefined' ? window.location.origin : '';
+      const loginUrl = base ? `${base}/login` : '/login';
+      const turmaUrl = base && s.slug_desejado ? `${base}/t/${s.slug_desejado.trim()}` : undefined;
       try {
         await sendApprovalEmail(
           s.email,
           s.nome_completo || 'Delegado(a)',
           s.nome_turma || 'sua turma',
-          loginUrl
+          loginUrl,
+          turmaUrl
         );
       } catch (emailErr) {
         console.error('Erro ao enviar e-mail, mas turma aprovada', emailErr);

@@ -36,20 +36,31 @@ function buildPendingHtml(nome: string, turma: string): string {
   `.trim();
 }
 
-function buildApprovedHtml(nome: string, turma: string, link: string): string {
+const WHATSAPP_FILIPE = "https://wa.me/5575992776610";
+
+function buildApprovedHtml(nome: string, turma: string, link: string, turmaUrl?: string): string {
+  const turmaBlock = turmaUrl
+    ? `<p style="margin:0 0 8px;color:#94a3b8;font-size:14px">Sua turma: <strong style="color:#e2e8f0">${turma}</strong></p>
+    <p style="margin:0 0 24px"><a href="${turmaUrl}" style="color:#6366f1;text-decoration:none">${turmaUrl}</a></p>`
+    : `<p style="margin:0 0 24px">Sua turma: <strong>${turma}</strong></p>`;
+
   return `
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;font-family:system-ui,-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;padding:32px;line-height:1.6">
   <div style="max-width:480px;margin:0 auto">
-    <p style="font-size:24px;font-weight:700;color:#fff;margin-bottom:24px">Parabéns, ${nome}! 🚀</p>
-    <p style="margin:0 0 16px">Sua solicitação foi aprovada.</p>
-    <p style="margin:0 0 24px">O acesso da turma <strong>${turma}</strong> está liberado. Faça login e comece a organizar sua rotina acadêmica.</p>
+    <p style="font-size:24px;font-weight:700;color:#fff;margin-bottom:24px">Cadastro confirmado, ${nome}! 🚀</p>
+    <p style="margin:0 0 16px">Sua solicitação foi aprovada pelo administrador.</p>
+    ${turmaBlock}
     <a href="${link}" style="display:inline-block;background:#6366f1;color:#fff;padding:14px 28px;border-radius:12px;text-decoration:none;font-weight:600;margin:16px 0">
       Acessar o Gradly
     </a>
-    <p style="margin:32px 0 0;font-size:12px;color:#64748b">Gradly — Organize sua vida acadêmica</p>
+    <p style="margin:32px 0 16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px;font-size:14px">
+      Dúvidas? Entre em contato com o Filipe pelo WhatsApp:<br>
+      <a href="${WHATSAPP_FILIPE}" style="color:#25d366;text-decoration:none;font-weight:600">📱 WhatsApp do Filipe</a>
+    </p>
+    <p style="margin:0;font-size:12px;color:#64748b">Gradly — Organize sua vida acadêmica</p>
   </div>
 </body>
 </html>
@@ -71,7 +82,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { type, email, nome, turma, link } = body;
+    const { type, email, nome, turma, link, turmaUrl } = body;
 
     if (!type || !email) {
       return new Response(
@@ -87,11 +98,12 @@ Deno.serve(async (req) => {
       subject = "Seu acesso ao Gradly está em análise ⏳";
       html = buildPendingHtml(nome || "Delegado(a)", turma || "sua turma");
     } else if (type === "approved") {
-      subject = "Acesso Liberado! Bem-vindo ao Gradly 🚀";
+      subject = "Cadastro confirmado! Bem-vindo ao Gradly 🚀";
       html = buildApprovedHtml(
         nome || "Delegado(a)",
         turma || "sua turma",
-        link || "https://gradly.app/login"
+        link || "https://gradly.app/login",
+        turmaUrl
       );
     } else {
       return new Response(
