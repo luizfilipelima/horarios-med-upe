@@ -295,23 +295,23 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
                             })}
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
+                        <div className="flex gap-3 sm:gap-4">
+                          <div className="flex-1 min-w-0 flex flex-col gap-1">
                             <label className={sectionLabelClass}>Início</label>
                             <input
                               type="time"
                               value={form.horarioInicio}
                               onChange={(e) => setForm((f) => ({ ...f, horarioInicio: e.target.value }))}
-                              className={inputClass}
+                              className={`${inputClass} min-w-0`}
                             />
                           </div>
-                          <div>
+                          <div className="flex-1 min-w-0 flex flex-col gap-1">
                             <label className={sectionLabelClass}>Fim</label>
                             <input
                               type="time"
                               value={form.horarioFim}
                               onChange={(e) => setForm((f) => ({ ...f, horarioFim: e.target.value }))}
-                              className={inputClass}
+                              className={`${inputClass} min-w-0`}
                             />
                           </div>
                         </div>
@@ -503,19 +503,25 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
                                                 );
                                               })}
                                             </div>
-                                            <div className="grid grid-cols-2 gap-2">
-                                              <input
-                                                type="time"
-                                                value={form.horarioInicio}
-                                                onChange={(e) => setForm((f) => ({ ...f, horarioInicio: e.target.value }))}
-                                                className={inputClass}
-                                              />
-                                              <input
-                                                type="time"
-                                                value={form.horarioFim}
-                                                onChange={(e) => setForm((f) => ({ ...f, horarioFim: e.target.value }))}
-                                                className={inputClass}
-                                              />
+                                            <div className="flex gap-2 sm:gap-3">
+                                              <div className="flex-1 min-w-0 flex flex-col gap-1">
+                                                <label className="block text-xs font-semibold text-gray-500 dark:text-zinc-400">Início</label>
+                                                <input
+                                                  type="time"
+                                                  value={form.horarioInicio}
+                                                  onChange={(e) => setForm((f) => ({ ...f, horarioInicio: e.target.value }))}
+                                                  className={`${inputClass} min-w-0`}
+                                                />
+                                              </div>
+                                              <div className="flex-1 min-w-0 flex flex-col gap-1">
+                                                <label className="block text-xs font-semibold text-gray-500 dark:text-zinc-400">Fim</label>
+                                                <input
+                                                  type="time"
+                                                  value={form.horarioFim}
+                                                  onChange={(e) => setForm((f) => ({ ...f, horarioFim: e.target.value }))}
+                                                  className={`${inputClass} min-w-0`}
+                                                />
+                                              </div>
                                             </div>
                                             <select
                                               value={form.type}
