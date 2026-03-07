@@ -5,7 +5,7 @@ import { Loader2, Check, X, Eye, EyeOff } from 'lucide-react';
 import { supabaseClient } from '../lib/supabase';
 import { sendPendingEmail } from '../utils/emailService';
 import { useDebounce } from '../hooks/useDebounce';
-import { getPasswordStrength, formatWhatsApp, whatsappToWaMe, type PaisCodigo } from '../utils/validators';
+import { getPasswordStrength, formatWhatsApp, whatsappToWaMe, normalizeSlug, type PaisCodigo } from '../utils/validators';
 
 const inputClass =
   'w-full rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md px-4 py-3.5 text-sm text-slate-50 placeholder-slate-500 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 focus:outline-none transition-all';
