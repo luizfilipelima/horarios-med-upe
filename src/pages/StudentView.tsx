@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 
 const SPLASH_MIN_DURATION_MS = 2800; // Garante animação do logo + tempo para turma e schedule carregarem
-import { useParams, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GraduationCap, Menu } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -45,7 +45,6 @@ export function StudentView() {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const location = useLocation();
   const { visibleDays, tituloPrincipal, subtitulo, googleDriveUrl, platformUrl, getInitialDayId, groups, eventos, loadingInitial } = useApp();
   const [menuOpen, setMenuOpen] = useState(false);
   const [eventsTimelineOpen, setEventsTimelineOpen] = useState(false);
