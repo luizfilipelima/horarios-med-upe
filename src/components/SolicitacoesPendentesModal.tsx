@@ -58,28 +58,41 @@ export function SolicitacoesPendentesModal({ isOpen, onClose, onSuccess }: Solic
     try {
       const slug = s.slug_desejado.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
-      const { data: newTurma, error: errTurma } = await supabaseClient
+      // Verificar se já existe turma com esse slug (ex.: reaprovação ou slug duplicado)
+      const { data: turmaExistente } = await supabaseClient
         .from('turmas')
-        .insert({ nome: s.nome_turma.trim(), faculdade: '', slug_url: slug })
         .select('id')
-        .single();
+        .eq('slug_url', slug)
+        .maybeSingle();
 
-      if (errTurma || !newTurma) throw new Error(errTurma?.message ?? 'Erro ao criar turma');
+      let turmaId: string;
+      if (turmaExistente?.id) {
+        turmaId = turmaExistente.id;
+      } else {
+        const { data: newTurma, error: errTurma } = await supabaseClient
+          .from('turmas')
+          .insert({ nome: s.nome_turma.trim(), faculdade: '', slug_url: slug })
+          .select('id')
+          .single();
 
-      await supabaseClient.from('configuracoes').insert({
-        turma_id: newTurma.id,
-        titulo: s.nome_turma.trim(),
-        subtitulo: '',
-        link_drive: 'https://drive.google.com',
-        link_plataforma: 'https://campus.upe.edu.py:86/moodle/my/courses.php',
-        ativar_sabado: false,
-        ativar_domingo: false,
-        array_de_grupos: ['Grupo 1'],
-      });
+        if (errTurma || !newTurma) throw new Error(errTurma?.message ?? 'Erro ao criar turma');
+        turmaId = newTurma.id;
+
+        await supabaseClient.from('configuracoes').insert({
+          turma_id: turmaId,
+          titulo: s.nome_turma.trim(),
+          subtitulo: '',
+          link_drive: 'https://drive.google.com',
+          link_plataforma: 'https://campus.upe.edu.py:86/moodle/my/courses.php',
+          ativar_sabado: false,
+          ativar_domingo: false,
+          array_de_grupos: ['Grupo 1'],
+        });
+      }
 
       const { error: errPerfil } = await supabaseClient
         .from('perfis')
-        .update({ status: 'aprovado', turma_id: newTurma.id })
+        .update({ status: 'aprovado', turma_id: turmaId })
         .eq('id', s.id);
 
       if (errPerfil) throw errPerfil;
