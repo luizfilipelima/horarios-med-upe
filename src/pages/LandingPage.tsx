@@ -16,7 +16,7 @@ export function LandingPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 antialiased">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4">
+      <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4 bg-slate-950/80 backdrop-blur-md">
         <Link to="/" className="flex items-center shrink-0" aria-label="Gradly">
           <div
             className="h-9 w-[140px] shrink-0"
@@ -33,33 +33,17 @@ export function LandingPage() {
             }}
           />
         </Link>
-        <div className="flex items-center gap-3">
-          <Link
-            to="/cadastro"
-            className="text-sm font-medium text-slate-400 hover:text-slate-50 transition-colors"
-          >
-            Criar conta
-          </Link>
-          <Link
-            to="/login"
-            className="text-sm font-medium text-slate-400 hover:text-slate-50 transition-colors"
-          >
-            Entrar
-          </Link>
-          <a
-            href={WHATSAPP_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 px-4 py-2.5 text-sm font-medium text-slate-50 hover:bg-white/10 hover:border-indigo-500/30 transition-colors"
-          >
-            Solicitar Acesso
-          </a>
-        </div>
+        <Link
+          to="/login"
+          className="rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 px-4 py-2.5 text-sm font-medium text-slate-50 hover:bg-white/10 hover:border-indigo-500/30 transition-colors"
+        >
+          Entrar
+        </Link>
       </header>
 
       <main>
         {/* Hero */}
-        <section className="relative pt-28 sm:pt-32 pb-16 sm:pb-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        <section className="relative pt-28 sm:pt-32 pb-[80px] px-4 sm:px-6 lg:px-8 overflow-hidden">
           <div className="max-w-4xl mx-auto text-center">
             <motion.div
               initial={{ opacity: 0, y: 12 }}
@@ -104,34 +88,30 @@ export function LandingPage() {
               whileTap={{ scale: 0.98 }}
               className="inline-flex items-center gap-2 rounded-2xl bg-indigo-500 px-8 py-4 text-base font-semibold text-white shadow-2xl shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:bg-indigo-600 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-slate-950 cta-pulse"
             >
-              Solicitar Acesso para minha Turma
+              Solicitar Acesso
               <ArrowRight size={20} strokeWidth={2.5} />
             </motion.a>
 
-            {/* Mockup visual */}
+            {/* Mockup iOS — screenshot do app em /t/med4c?grupo=C.1 */}
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.5 }}
-              className="mt-16 sm:mt-20 mx-auto max-w-md"
+              className="mt-16 sm:mt-20 mx-auto max-w-md px-2"
             >
-              <div className="rounded-3xl bg-white/5 backdrop-blur-md border border-white/10 p-6 shadow-2xl shadow-indigo-500/10">
-                <div className="space-y-3">
-                  <div className="h-4 w-24 rounded-full bg-indigo-500/30" />
-                  <div className="h-6 w-full rounded-xl bg-slate-800/80" />
-                  <div className="h-6 w-3/4 rounded-xl bg-slate-800/60" />
-                  <div className="flex gap-2 mt-4">
-                    <div className="h-12 flex-1 rounded-xl bg-indigo-500/20 border border-indigo-500/30" />
-                    <div className="h-12 flex-1 rounded-xl bg-slate-800/60" />
-                  </div>
-                </div>
+              <div className="rounded-3xl overflow-hidden bg-white/5 backdrop-blur-md border border-white/10 shadow-2xl shadow-indigo-500/10 ring-1 ring-white/5">
+                <img
+                  src="/mockup-ios-gradly.png"
+                  alt="App Gradly no iPhone — horários da turma Medicina 4º Ano C"
+                  className="w-full h-auto object-cover object-top"
+                />
               </div>
             </motion.div>
           </div>
         </section>
 
         {/* Features Bento Box */}
-        <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8">
+        <section className="pt-0 pb-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-6xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               {[
@@ -194,7 +174,7 @@ export function LandingPage() {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-2xl bg-indigo-500 px-8 py-4 text-base font-semibold text-white shadow-xl shadow-indigo-500/25 hover:bg-indigo-600 hover:shadow-indigo-500/30 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-slate-950"
             >
-              Solicitar Acesso para minha Turma
+              Solicitar Acesso
               <ArrowRight size={20} strokeWidth={2.5} />
             </a>
           </motion.div>

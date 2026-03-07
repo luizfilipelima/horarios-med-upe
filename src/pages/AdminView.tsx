@@ -382,31 +382,19 @@ export function AdminView() {
         </motion.section>
       </main>
 
-      {/* Dropdown em Portal — sempre visível no mobile */}
+      {/* Dropdown em Portal — centralizado na tela */}
       {openDropdownId && dropdownRect && (() => {
         const t = turmas.find((x) => x.id === openDropdownId);
         if (!t) return null;
-        const GAP = 8;
-        const DROPDOWN_H = 220;
-        const openAbove = dropdownRect.top + dropdownRect.height + GAP + DROPDOWN_H > window.innerHeight;
-        const top = openAbove
-          ? dropdownRect.top - GAP - DROPDOWN_H
-          : dropdownRect.top + dropdownRect.height + GAP;
-        const right = Math.max(16, window.innerWidth - dropdownRect.left - dropdownRect.width);
         return createPortal(
           <AnimatePresence>
             <motion.div
               ref={dropdownContentRef}
-              initial={{ opacity: 0, y: openAbove ? 8 : -8, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: openAbove ? -4 : 4 }}
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
               transition={{ duration: 0.15 }}
-              className="fixed z-[100] py-2 w-52 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-2xl"
-              style={{
-                top: Math.max(16, Math.min(top, window.innerHeight - DROPDOWN_H - 16)),
-                right,
-                left: 'auto',
-              }}
+              className="fixed z-[100] py-2 w-52 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-2xl left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
             >
               <button
                 type="button"
