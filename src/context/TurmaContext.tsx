@@ -45,8 +45,8 @@ export function TurmaProvider({ turmaId, slug, children }: TurmaProviderProps) {
 
     async function load() {
       const query = turmaId
-        ? supabaseClient.from('turmas').select('id, nome, faculdade, slug_url').eq('id', turmaId).single()
-        : supabaseClient.from('turmas').select('id, nome, faculdade, slug_url').eq('slug_url', slug).single();
+        ? supabaseClient.from('turmas').select('id, nome, faculdade, slug_url').eq('id', turmaId).maybeSingle()
+        : supabaseClient.from('turmas').select('id, nome, faculdade, slug_url').eq('slug_url', slug).maybeSingle();
 
       const { data } = await query;
       if (!cancelled && data) {

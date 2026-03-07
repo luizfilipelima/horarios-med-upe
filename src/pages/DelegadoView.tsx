@@ -58,7 +58,7 @@ export function DelegadoView() {
     toast,
   } = useApp();
   const { signOut } = useAuth();
-  const { slug } = useTurma();
+  const { slug, turma } = useTurma();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [eventsModalOpen, setEventsModalOpen] = useState(false);
@@ -135,10 +135,10 @@ export function DelegadoView() {
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">
-                {tituloPrincipal}
+                {tituloPrincipal || turma?.nome || 'Minha Turma'}
               </h1>
               <p className="text-sm font-medium text-gray-500 dark:text-zinc-500">
-                {subtitulo}
+                {subtitulo || turma?.faculdade || (slug ? `/t/${slug}` : '')}
               </p>
             </div>
           </div>

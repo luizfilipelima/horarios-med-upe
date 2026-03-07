@@ -194,7 +194,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     async function load() {
       try {
         const [configRes, aulasRes, eventosRes] = await Promise.all([
-          supabaseClient.from('configuracoes').select('*').eq('turma_id', turmaId).single(),
+          supabaseClient.from('configuracoes').select('*').eq('turma_id', turmaId).maybeSingle(),
           supabaseClient.from('aulas').select('*').eq('turma_id', turmaId).order('dia_semana', { ascending: true }).order('ordem', { ascending: true }),
           supabaseClient.from('eventos').select('*').eq('turma_id', turmaId).order('data', { ascending: true }),
         ]);
