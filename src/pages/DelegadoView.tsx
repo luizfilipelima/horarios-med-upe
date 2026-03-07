@@ -12,6 +12,41 @@ import { Footer } from '../components/Footer';
 import { SettingsModal } from '../components/SettingsModal';
 import { ManageEventsModal } from '../components/ManageEventsModal';
 
+const actionCards = [
+  {
+    id: 'gradly',
+    icon: Link2,
+    label: 'Minha Gradly',
+    type: 'link' as const,
+    href: '',
+    accent: 'indigo',
+  },
+  {
+    id: 'settings',
+    icon: Settings,
+    label: 'Ajustes',
+    type: 'button' as const,
+    onClickKey: 'settings' as const,
+    accent: 'neutral',
+  },
+  {
+    id: 'events',
+    icon: ClipboardList,
+    label: 'Gerenciar Avaliações',
+    type: 'button' as const,
+    onClickKey: 'events' as const,
+    accent: 'neutral',
+  },
+  {
+    id: 'support',
+    icon: LifeBuoy,
+    label: 'Falar com Suporte',
+    type: 'link' as const,
+    href: 'https://wa.me/5575992776610?text=' + encodeURIComponent('Olá Filipe, preciso de ajuda com o Gradly'),
+    accent: 'emerald',
+  },
+];
+
 export function DelegadoView() {
   const {
     visibleDays,
@@ -32,6 +67,9 @@ export function DelegadoView() {
   const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>(FILTER_TODOS);
   const selectedDay = visibleDays.find((d) => d.id === selectedId) ?? visibleDays[0];
 
+  const schedulePageUrl =
+    typeof window !== 'undefined' && slug ? `${window.location.origin}/t/${slug}` : '';
+
   useEffect(() => {
     if (visibleDays.length > 0 && !visibleDays.some((d) => d.id === selectedId)) {
       setSelectedId(visibleDays[0].id);
@@ -48,9 +86,6 @@ export function DelegadoView() {
     }
   }, [groups, selectedGroupFilter]);
 
-  const schedulePageUrl = typeof window !== 'undefined' && slug
-    ? `${window.location.origin}/t/${slug}`
-    : '';
   const handleCopyScheduleLink = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -64,9 +99,26 @@ export function DelegadoView() {
     }
   };
 
-  const supportWhatsAppUrl =
-    'https://wa.me/5575992776610?text=' +
-    encodeURIComponent('Olá Filipe, preciso de ajuda com o Gradly');
+  const handleAction = (card: (typeof actionCards)[number]) => {
+    if (card.type === 'button') {
+      if (card.onClickKey === 'settings') setSettingsOpen(true);
+      if (card.onClickKey === 'events') setEventsModalOpen(true);
+    }
+  };
+
+  const getCardStyles = (accent: string) => {
+    const base =
+      'flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all duration-200 min-h-[88px] text-left w-full';
+    const neutral =
+      'bg-white dark:bg-slate-800/30 border-slate-200 dark:border-slate-800/80 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50';
+    const indigo =
+      'bg-indigo-50/80 dark:bg-indigo-500/10 border-indigo-200/60 dark:border-indigo-500/20 text-indigo-800 dark:text-indigo-300 hover:bg-indigo-100/80 dark:hover:bg-indigo-500/15';
+    const emerald =
+      'bg-emerald-50/80 dark:bg-emerald-500/10 border-emerald-200/60 dark:border-emerald-500/20 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100/80 dark:hover:bg-emerald-500/15';
+    if (accent === 'indigo') return `${base} ${indigo}`;
+    if (accent === 'emerald') return `${base} ${emerald}`;
+    return `${base} ${neutral}`;
+  };
 
   return (
     <div className="min-h-screen bg-[#f8f7f5] dark:bg-zinc-950 transition-colors duration-300 max-w-md mx-auto">
@@ -97,7 +149,7 @@ export function DelegadoView() {
               onClick={() => signOut()}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="p-2 rounded-2xl bg-white dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+              className="p-2 rounded-2xl bg-white dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 hover:text-red-600 dark:hover:text-red-400 transition-colors border border-slate-200 dark:border-zinc-700"
               aria-label="Sair"
             >
               <LogOut size={20} strokeWidth={2} />
@@ -105,69 +157,56 @@ export function DelegadoView() {
           </div>
         </div>
 
-        {/* Botões de ação globais — alto contraste modo claro */}
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-[1.35fr_0.65fr] gap-3 mb-6">
-          <div className="h-12 rounded-2xl flex items-stretch overflow-hidden bg-white dark:bg-indigo-500/10 border border-indigo-200 dark:border-transparent hover:bg-indigo-50 dark:hover:bg-indigo-500/20 transition-all duration-200 shadow-sm dark:shadow-none">
-            <motion.a
-              href={schedulePageUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              className="flex-1 min-w-0 flex items-center justify-center gap-2 text-indigo-800 dark:text-indigo-400 font-semibold text-sm"
-            >
-              <Link2 size={18} strokeWidth={2} className="shrink-0" />
-              <span className="truncate">Minha Gradly</span>
-            </motion.a>
-            <motion.button
-              type="button"
-              onClick={handleCopyScheduleLink}
-              aria-label={linkCopied ? 'Link copiado' : 'Copiar link'}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="shrink-0 flex items-center justify-center w-11 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/30 transition-colors border-l border-indigo-200 dark:border-indigo-400/20"
-            >
-              {linkCopied ? (
-                <Check size={18} strokeWidth={2} />
-              ) : (
-                <Copy size={18} strokeWidth={2} className="opacity-90" />
-              )}
-            </motion.button>
-          </div>
-
-          <motion.button
-            type="button"
-            onClick={() => setSettingsOpen(true)}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="h-12 rounded-2xl px-4 flex items-center justify-center gap-2 bg-white dark:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-700/80 font-medium text-sm transition-all duration-200 shadow-sm dark:shadow-none"
-          >
-            <Settings size={18} strokeWidth={2} className="shrink-0" />
-            <span className="truncate">Ajustes</span>
-          </motion.button>
-
-          <motion.button
-            type="button"
-            onClick={() => setEventsModalOpen(true)}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="h-12 rounded-2xl px-4 flex items-center justify-center gap-2 bg-white dark:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-700/80 font-medium text-sm transition-all duration-200 sm:col-span-2 shadow-sm dark:shadow-none"
-          >
-            <ClipboardList size={18} strokeWidth={2} className="shrink-0" />
-            <span className="truncate">Gerenciar Avaliações</span>
-          </motion.button>
-
-          <motion.a
-            href={supportWhatsAppUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="h-12 rounded-2xl px-4 flex items-center justify-center gap-2 bg-white dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-transparent hover:bg-emerald-50 dark:hover:bg-emerald-500/20 font-semibold text-sm transition-all duration-200 sm:col-span-2 shadow-sm dark:shadow-none"
-          >
-            <LifeBuoy size={18} strokeWidth={2} className="shrink-0" />
-            <span className="truncate">Falar com Suporte</span>
-          </motion.a>
+        {/* Grid de Ações Rápidas */}
+        <div className="mt-6 grid grid-cols-2 gap-3 mb-6">
+          {actionCards.map((card) => {
+            const Icon = card.icon;
+            const isGradly = card.id === 'gradly';
+            return card.type === 'link' ? (
+              <motion.a
+                key={card.id}
+                href={isGradly ? schedulePageUrl : card.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={`relative ${getCardStyles(card.accent)}`}
+              >
+                {isGradly && (
+                  <motion.button
+                    type="button"
+                    onClick={handleCopyScheduleLink}
+                    aria-label={linkCopied ? 'Link copiado' : 'Copiar link'}
+                    className="absolute top-2 right-2 p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                  >
+                    {linkCopied ? (
+                      <Check size={16} strokeWidth={2} className="text-emerald-600" />
+                    ) : (
+                      <Copy size={16} strokeWidth={2} className="opacity-70" />
+                    )}
+                  </motion.button>
+                )}
+                <Icon size={22} strokeWidth={2} className="shrink-0" />
+                <span className="text-sm font-semibold leading-tight text-center">
+                  {card.label}
+                </span>
+              </motion.a>
+            ) : (
+              <motion.button
+                key={card.id}
+                type="button"
+                onClick={() => handleAction(card)}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={getCardStyles(card.accent)}
+              >
+                <Icon size={22} strokeWidth={2} className="shrink-0" />
+                <span className="text-sm font-semibold leading-tight text-center">
+                  {card.label}
+                </span>
+              </motion.button>
+            );
+          })}
         </div>
       </motion.header>
 
@@ -189,7 +228,6 @@ export function DelegadoView() {
         )}
       </AnimatePresence>
 
-      {/* Seletor de Dias */}
       <div className="px-5 mb-4">
         <DaySelector
           days={visibleDays}
@@ -199,7 +237,6 @@ export function DelegadoView() {
         />
       </div>
 
-      {/* Filtro de Grupo — mostra matérias vinculadas ao grupo selecionado */}
       {!loadingInitial && groups.length > 0 && (
         <div className="px-5 mb-4">
           <GroupFilter

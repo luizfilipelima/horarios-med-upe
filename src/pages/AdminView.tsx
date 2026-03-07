@@ -202,19 +202,19 @@ export function AdminView() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 antialiased">
+    <div className="min-h-screen bg-[#f8f7f5] dark:bg-slate-950 text-gray-900 dark:text-slate-50 antialiased transition-colors duration-300">
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="sticky top-0 z-30 backdrop-blur-xl bg-slate-950/80 border-b border-white/5 px-4 sm:px-6 py-4 flex items-center justify-between"
+        className="sticky top-0 z-30 backdrop-blur-xl bg-[#f8f7f5]/90 dark:bg-slate-950/80 border-b border-slate-200 dark:border-white/5 px-4 sm:px-6 py-4 flex items-center justify-between"
       >
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center">
             <BarChart3 size={20} className="text-indigo-400" strokeWidth={2} />
           </div>
           <div>
-            <h1 className="text-lg font-bold tracking-tight text-white">Gradly — Painel CEO</h1>
-            <p className="text-xs text-slate-400">Business Intelligence</p>
+            <h1 className="text-lg font-bold tracking-tight text-gray-900 dark:text-white">Gradly — Painel CEO</h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Business Intelligence</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -222,7 +222,7 @@ export function AdminView() {
           <Link
             to="/login"
             onClick={() => signOut()}
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 text-slate-400 hover:text-red-400 hover:border-red-500/30 transition-colors"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-2xl bg-white/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:border-red-500/30 transition-colors"
             aria-label="Sair"
           >
             <LogOut size={20} strokeWidth={2} />
@@ -259,7 +259,7 @@ export function AdminView() {
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.1 + i * 0.04 }}
-              className="rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 p-4 sm:p-5"
+              className="rounded-2xl bg-white dark:bg-white/5 backdrop-blur-md border border-slate-200 dark:border-white/10 p-4 sm:p-5"
             >
               <div className="flex items-center gap-2 mb-2">
                 <item.icon size={18} className="text-indigo-400 shrink-0" strokeWidth={2} />
@@ -267,7 +267,7 @@ export function AdminView() {
                   {item.label}
                 </span>
               </div>
-              <p className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+              <p className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
                 {loading ? '—' : item.value}
               </p>
             </motion.div>
@@ -283,7 +283,7 @@ export function AdminView() {
           transition={{ delay: 0.15 }}
         >
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-white">Turmas</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Turmas</h2>
             <motion.button
               type="button"
               onClick={() => setAddModalOpen(true)}
@@ -301,7 +301,7 @@ export function AdminView() {
               <Loader2 size={32} className="text-indigo-500 animate-spin" strokeWidth={2} />
             </div>
           ) : turmas.length === 0 ? (
-            <div className="rounded-3xl bg-white/5 backdrop-blur-md border border-white/10 py-16 text-center text-slate-400">
+            <div className="rounded-3xl bg-white dark:bg-white/5 backdrop-blur-md border border-slate-200 dark:border-white/10 py-16 text-center text-slate-500 dark:text-slate-400">
               Nenhuma turma cadastrada.
             </div>
           ) : (
@@ -312,13 +312,13 @@ export function AdminView() {
                   layout
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4"
+                  className={`rounded-2xl bg-white dark:bg-white/5 backdrop-blur-md border border-slate-200 dark:border-white/10 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4 ${openDropdownId === t.id ? 'relative z-50' : ''}`}
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-white truncate">
+                    <p className="font-semibold text-gray-900 dark:text-white truncate">
                       {tituloByTurmaId[t.id] ?? t.nome}
                     </p>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-slate-400">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-slate-500 dark:text-slate-400">
                       <span>{t.faculdade || '—'}</span>
                       <span className="font-mono text-indigo-400">/t/{t.slug_url}</span>
                       <span>· {alunosByTurmaId[t.id] ?? 0} alunos</span>
@@ -335,7 +335,7 @@ export function AdminView() {
                       className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-2xl font-medium text-sm transition-colors ${
                         inviteCopiedId === t.id
                           ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 hover:border-indigo-500/30'
+                          : 'bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/10 hover:border-indigo-500/30'
                       }`}
                       aria-label={inviteCopiedId === t.id ? 'Link copiado!' : 'Copiar link de convite'}
                       title={inviteCopiedId === t.id ? 'Copiado!' : 'Gerar e copiar link de convite'}
@@ -354,7 +354,7 @@ export function AdminView() {
                         onClick={() => setOpenDropdownId(openDropdownId === t.id ? null : t.id)}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
+                        className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white transition-colors"
                         aria-label="Mais opções"
                       >
                         <MoreVertical size={20} strokeWidth={2} />
@@ -366,7 +366,7 @@ export function AdminView() {
                             initial={{ opacity: 0, y: -8, scale: 0.96 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: -4 }}
-                            className="absolute right-0 top-full mt-2 py-2 w-48 rounded-2xl bg-slate-900 border border-white/10 shadow-xl z-50"
+                            className="absolute right-0 top-full mt-2 py-2 w-48 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-xl z-50"
                           >
                             <button
                               type="button"
@@ -374,7 +374,7 @@ export function AdminView() {
                                 setEditModalTurma(t);
                                 setOpenDropdownId(null);
                               }}
-                              className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-300 hover:bg-white/5 hover:text-white"
+                              className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white"
                             >
                               <Pencil size={16} strokeWidth={2} />
                               Editar
@@ -385,7 +385,7 @@ export function AdminView() {
                                 setDelegadosModalTurma(t);
                                 setOpenDropdownId(null);
                               }}
-                              className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-300 hover:bg-white/5 hover:text-white"
+                              className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white"
                             >
                               <UserPlus size={16} strokeWidth={2} />
                               Gerenciar Delegados
@@ -402,7 +402,7 @@ export function AdminView() {
                               href={`/t/${t.slug_url}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="block w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-300 hover:bg-white/5 hover:text-white"
+                              className="block w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white"
                             >
                               <Link2 size={16} strokeWidth={2} />
                               Abrir turma

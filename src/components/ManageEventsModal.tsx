@@ -4,12 +4,6 @@ import { X, Plus, Trash2, Loader2, CalendarClock } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import type { EventoTipo } from '../context/AppContext';
 
-const inputClass =
-  'w-full rounded-2xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 text-sm text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-600 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500/40 focus:border-indigo-300 dark:focus:border-indigo-500/50 focus:outline-none transition-shadow';
-
-const sectionLabelClass =
-  'block text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-2';
-
 const TIPOS: { value: EventoTipo; label: string }[] = [
   { value: 'Prova', label: 'Prova' },
   { value: 'Trabalho', label: 'Trabalho' },
@@ -97,42 +91,55 @@ export function ManageEventsModal({ isOpen, onClose }: ManageEventsModalProps) {
               exit={{ opacity: 0, y: 16, scale: 0.98 }}
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()}
-              className="pointer-events-auto w-full max-w-lg max-h-[88vh] flex flex-col rounded-3xl bg-white dark:bg-zinc-900 shadow-xl dark:shadow-none dark:border dark:border-zinc-800 overflow-hidden"
+              className="pointer-events-auto w-full max-w-lg max-h-[90vh] sm:max-h-[88vh] flex flex-col rounded-3xl sm:rounded-2xl bg-white dark:bg-zinc-900 shadow-xl dark:shadow-none dark:border dark:border-zinc-800 overflow-hidden"
             >
-              <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-zinc-800">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100">
+              <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-zinc-800">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-zinc-100">
                   Gerenciar Avaliações e Eventos
                 </h2>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="p-2 rounded-full text-gray-400 dark:text-zinc-500 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-600 dark:hover:text-zinc-300 transition-colors"
+                  className="p-2.5 rounded-full text-slate-400 dark:text-zinc-500 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-600 dark:hover:text-zinc-300 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                   aria-label="Fechar"
                 >
                   <X size={22} strokeWidth={2} />
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <section>
-                    <label className={sectionLabelClass}>Novo evento</label>
-                    <div className="space-y-3">
+              <div className="flex-1 overflow-y-auto scrollbar-hide">
+                {/* Bloco: Criar Novo Evento */}
+                <section className="p-5 pb-4 border-b border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-slate-900/20">
+                  <label className="label-premium">Criar Novo Evento</label>
+                  <form onSubmit={handleSubmit} className="space-y-3">
+                    <div>
+                      <label htmlFor="ev-titulo" className="label-premium">
+                        Título
+                      </label>
                       <input
+                        id="ev-titulo"
                         type="text"
                         value={titulo}
                         onChange={(e) => setTitulo(e.target.value)}
-                        placeholder="Título (ex: Prova 1)"
-                        className={inputClass}
+                        placeholder="Ex: Prova 1"
+                        className="input-premium"
                         required
                       />
+                    </div>
+                    <div>
+                      <label htmlFor="ev-materia" className="label-premium">
+                        Matéria
+                      </label>
                       <select
+                        id="ev-materia"
                         value={materia}
                         onChange={(e) => setMateria(e.target.value)}
-                        className={`${inputClass} select-arrow select-arrow-right`}
+                        className="input-premium select-arrow select-arrow-right"
                       >
                         <option value="" disabled={materias.length === 0}>
-                          {materias.length === 0 ? 'Cadastre uma matéria primeiro' : 'Selecione a matéria'}
+                          {materias.length === 0
+                            ? 'Cadastre uma matéria primeiro'
+                            : 'Selecione a matéria'}
                         </option>
                         {materias.map((m) => (
                           <option key={m} value={m}>
@@ -140,21 +147,26 @@ export function ManageEventsModal({ isOpen, onClose }: ManageEventsModalProps) {
                           </option>
                         ))}
                       </select>
+                    </div>
+                    <div>
+                      <label htmlFor="ev-data" className="label-premium">
+                        Data e horário
+                      </label>
                       <div className="relative">
                         <div
-                          className={`flex items-center gap-3 ${inputClass} pointer-events-none min-h-[44px]`}
+                          className="input-premium flex items-center gap-3 pointer-events-none"
                           aria-hidden
                         >
                           <CalendarClock
                             size={18}
-                            className="text-gray-400 dark:text-zinc-500 shrink-0"
+                            className="text-slate-400 dark:text-zinc-500 shrink-0"
                             strokeWidth={2}
                           />
                           <span
                             className={
                               data
-                                ? 'text-gray-900 dark:text-zinc-100'
-                                : 'text-gray-400 dark:text-zinc-600'
+                                ? 'text-slate-900 dark:text-zinc-100'
+                                : 'text-slate-400 dark:text-zinc-500'
                             }
                           >
                             {data
@@ -163,31 +175,50 @@ export function ManageEventsModal({ isOpen, onClose }: ManageEventsModalProps) {
                           </span>
                         </div>
                         <input
+                          id="ev-data"
                           type="datetime-local"
                           value={data}
                           onChange={(e) => setData(e.target.value)}
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer min-h-[44px]"
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                           aria-label="Definir data e horário"
                         />
                       </div>
+                    </div>
+                    <div>
+                      <label htmlFor="ev-pontuacao" className="label-premium">
+                        Pontuação
+                      </label>
                       <input
+                        id="ev-pontuacao"
                         type="text"
                         value={pontuacao}
                         onChange={(e) => setPontuacao(e.target.value)}
-                        placeholder="Pontuação (ex: 10 pts)"
-                        className={inputClass}
+                        placeholder="Ex: 10 pts"
+                        className="input-premium"
                       />
+                    </div>
+                    <div>
+                      <label htmlFor="ev-descricao" className="label-premium">
+                        Descrição
+                      </label>
                       <input
+                        id="ev-descricao"
                         type="text"
                         value={descricao}
                         onChange={(e) => setDescricao(e.target.value)}
-                        placeholder="Descrição"
-                        className={inputClass}
+                        placeholder="Opcional"
+                        className="input-premium"
                       />
+                    </div>
+                    <div>
+                      <label htmlFor="ev-tipo" className="label-premium">
+                        Tipo
+                      </label>
                       <select
+                        id="ev-tipo"
                         value={tipo}
                         onChange={(e) => setTipo(e.target.value as EventoTipo)}
-                        className={`select-arrow select-arrow-right ${inputClass}`}
+                        className="input-premium select-arrow select-arrow-right"
                       >
                         {TIPOS.map((t) => (
                           <option key={t.value} value={t.value}>
@@ -199,13 +230,13 @@ export function ManageEventsModal({ isOpen, onClose }: ManageEventsModalProps) {
                     <motion.button
                       type="submit"
                       disabled={Boolean(savingMessage)}
-                      whileHover={!savingMessage ? { scale: 1.02 } : undefined}
-                      whileTap={!savingMessage ? { scale: 0.98 } : undefined}
-                      className="mt-3 w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-indigo-500 text-white font-medium text-sm hover:bg-indigo-600 disabled:opacity-80 transition-colors"
+                      whileHover={!savingMessage ? { scale: 1.01 } : undefined}
+                      whileTap={!savingMessage ? { scale: 0.99 } : undefined}
+                      className="w-full h-12 flex items-center justify-center gap-2 rounded-2xl bg-indigo-500 text-white font-semibold text-sm hover:bg-indigo-600 disabled:opacity-80 transition-colors"
                     >
                       {savingMessage ? (
                         <>
-                          <Loader2 size={18} strokeWidth={2} className="animate-spin flex-shrink-0" />
+                          <Loader2 size={18} strokeWidth={2} className="animate-spin" />
                           Adicionar evento
                         </>
                       ) : (
@@ -215,17 +246,18 @@ export function ManageEventsModal({ isOpen, onClose }: ManageEventsModalProps) {
                         </>
                       )}
                     </motion.button>
-                  </section>
-                </form>
+                  </form>
+                </section>
 
-                <section>
-                  <label className={sectionLabelClass}>Eventos cadastrados</label>
+                {/* Bloco: Eventos Cadastrados */}
+                <section className="p-5">
+                  <label className="label-premium">Eventos Cadastrados</label>
                   <ul className="space-y-2">
                     <AnimatePresence mode="popLayout">
                       {eventos.length === 0 ? (
-                        <p className="text-sm text-gray-500 dark:text-zinc-500 py-4 text-center rounded-2xl bg-gray-50 dark:bg-zinc-800/60">
-                          Nenhum evento ainda.
-                        </p>
+                        <li className="text-sm text-slate-500 dark:text-zinc-500 py-8 text-center rounded-2xl bg-slate-50 dark:bg-slate-800/30 border border-slate-200/80 dark:border-white/5">
+                          Nenhum evento cadastrado.
+                        </li>
                       ) : (
                         eventos.map((ev) => (
                           <motion.li
@@ -234,13 +266,13 @@ export function ManageEventsModal({ isOpen, onClose }: ManageEventsModalProps) {
                             initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, x: -8 }}
-                            className="flex items-center gap-3 py-3 px-4 rounded-2xl bg-gray-50 dark:bg-zinc-800/60 border border-gray-100 dark:border-zinc-700"
+                            className="flex items-center gap-3 py-3 px-4 rounded-xl bg-white dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600/80 transition-colors"
                           >
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium text-gray-900 dark:text-zinc-100 truncate">
+                              <p className="font-semibold text-slate-900 dark:text-zinc-100 truncate">
                                 {ev.titulo}
                               </p>
-                              <p className="text-xs text-gray-500 dark:text-zinc-500">
+                              <p className="text-xs text-slate-500 dark:text-zinc-500">
                                 {ev.materia && `${ev.materia} · `}
                                 {formatEventDate(ev.data)}
                                 {ev.pontuacao && ` · ${ev.pontuacao}`}
@@ -249,7 +281,7 @@ export function ManageEventsModal({ isOpen, onClose }: ManageEventsModalProps) {
                             <button
                               type="button"
                               onClick={() => removeEvento(ev.id)}
-                              className="p-2 rounded-xl text-gray-400 dark:text-zinc-500 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                              className="p-2.5 rounded-xl text-slate-400 dark:text-zinc-500 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                               aria-label={`Excluir ${ev.titulo}`}
                             >
                               <Trash2 size={18} strokeWidth={2} />
@@ -262,16 +294,15 @@ export function ManageEventsModal({ isOpen, onClose }: ManageEventsModalProps) {
                 </section>
               </div>
 
-              <div className="flex-shrink-0 px-5 py-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-800/30">
-                <motion.button
+              {/* Rodapé fixo — ação secundária */}
+              <div className="flex-shrink-0 sticky bottom-0 border-t border-slate-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md p-4">
+                <button
                   type="button"
                   onClick={onClose}
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                  className="w-full flex items-center justify-center py-3.5 px-4 rounded-2xl bg-slate-200 dark:bg-zinc-700 text-slate-800 dark:text-zinc-200 font-semibold text-sm hover:bg-slate-300 dark:hover:bg-zinc-600 transition-colors"
+                  className="w-full h-12 flex items-center justify-center rounded-2xl bg-white/5 dark:bg-white/5 hover:bg-white/10 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 font-medium text-sm border border-slate-200 dark:border-white/10 transition-colors"
                 >
                   Concluído
-                </motion.button>
+                </button>
               </div>
             </motion.div>
           </div>

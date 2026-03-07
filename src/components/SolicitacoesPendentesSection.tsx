@@ -101,12 +101,13 @@ export function SolicitacoesPendentesSection({ onSuccess }: { onSuccess: () => v
     setProcessingId(s.id);
     setError(null);
     try {
-      const { error: err } = await supabaseClient
-        .from('perfis')
-        .update({ status: 'rejeitado' })
-        .eq('id', s.id);
+      const { data, error: fnError } = await supabaseClient.functions.invoke(
+        'rejeitar-solicitacao',
+        { body: { perfil_id: s.id } }
+      );
 
-      if (err) throw err;
+      if (fnError) throw fnError;
+      if (data?.error) throw new Error(data.error);
 
       setSolicitacoes((prev) => prev.filter((x) => x.id !== s.id));
       onSuccess();
@@ -126,9 +127,9 @@ export function SolicitacoesPendentesSection({ onSuccess }: { onSuccess: () => v
       >
         <div className="flex items-center gap-2 mb-4">
           <Inbox size={20} className="text-indigo-400" strokeWidth={2} />
-          <h2 className="text-lg font-bold text-white">Caixa de Entrada</h2>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Caixa de Entrada</h2>
         </div>
-        <div className="rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 py-12 flex justify-center">
+        <div className="rounded-2xl bg-white dark:bg-white/5 backdrop-blur-md border border-slate-200 dark:border-white/10 py-12 flex justify-center">
           <Loader2 size={28} className="text-indigo-500 animate-spin" strokeWidth={2} />
         </div>
       </motion.section>
@@ -144,16 +145,16 @@ export function SolicitacoesPendentesSection({ onSuccess }: { onSuccess: () => v
       className="mb-10"
     >
       <div className="flex items-center gap-2 mb-4">
-        <Inbox size={20} className="text-amber-400" strokeWidth={2} />
-        <h2 className="text-lg font-bold text-white">Caixa de Entrada</h2>
+        <Inbox size={20} className="text-amber-500 dark:text-amber-400" strokeWidth={2} />
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white">Caixa de Entrada</h2>
         <span className="text-sm text-amber-400 font-medium">({solicitacoes.length} pendente{solicitacoes.length !== 1 ? 's' : ''})</span>
       </div>
 
       <div
         className={`rounded-2xl backdrop-blur-md p-4 sm:p-5 border transition-colors ${
           solicitacoes.length > 0
-            ? 'bg-white/5 border-indigo-500/30 shadow-lg shadow-indigo-500/5'
-            : 'bg-white/5 border-white/10'
+            ? 'bg-white dark:bg-white/5 border-indigo-500/30 shadow-lg shadow-indigo-500/5'
+            : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10'
         }`}
       >
         {error && (
@@ -171,12 +172,12 @@ export function SolicitacoesPendentesSection({ onSuccess }: { onSuccess: () => v
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, height: 0 }}
-                className="rounded-xl bg-slate-900/50 border border-white/5 p-4"
+                className="rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 p-4"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="min-w-0 space-y-2">
-                    <p className="font-semibold text-white">{s.nome_completo || s.email}</p>
-                    <ul className="space-y-1 text-sm text-slate-400">
+                    <p className="font-semibold text-gray-900 dark:text-white">{s.nome_completo || s.email}</p>
+                    <ul className="space-y-1 text-sm text-slate-500 dark:text-slate-400">
                       {s.email && (
                         <li className="flex items-center gap-2">
                           <Mail size={14} className="text-slate-500 shrink-0" />
