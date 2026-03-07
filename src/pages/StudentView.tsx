@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+
+const SPLASH_MIN_DURATION_MS = 1800; // Garante que a animação do logo (1.5s) seja visível
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GraduationCap, Menu } from 'lucide-react';
@@ -33,6 +35,10 @@ export function StudentView() {
   const [selectedId, setSelectedId] = useState<string>(() => getInitialDayId());
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const [splashMinTimeReached, setSplashMinTimeReached] = useState(false);
+  const [isAtTop, setIsAtTop] = useState(true);
+  const [isAtBottom, setIsAtBottom] = useState(false);
   const grupoFromUrl = searchParams.get('grupo');
   const [selectedGroupFilter, setSelectedGroupFilterState] = useState<string>(() => {
     const g = grupoFromUrl ?? '';
@@ -104,6 +110,14 @@ export function StudentView() {
     };
   }, [loadingInitial, tituloPrincipal, subtitulo]);
 
+  // Garante que o splash fique visível pelo tempo mínimo (animação do logo)
+  useEffect(() => {
+    const t = setTimeout(() => setSplashMinTimeReached(true), SPLASH_MIN_DURATION_MS);
+    return () => clearTimeout(t);
+  }, []);
+
+  const showSplash = loadingInitial || !splashMinTimeReached;
+
   const MIN_SWIPE_DISTANCE = 50;
 
   const handleDayChangeBySwipe = useCallback(
@@ -142,6 +156,27 @@ export function StudentView() {
     [handleDayChangeBySwipe]
   );
 
+  const updateScrollState = useCallback((el: HTMLDivElement | null) => {
+    if (!el) return;
+    const { scrollTop, scrollHeight, clientHeight } = el;
+    setIsAtTop(scrollTop <= 10);
+    setIsAtBottom(Math.ceil(scrollTop + clientHeight) >= scrollHeight - 10);
+  }, []);
+
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    updateScrollState(e.target as HTMLDivElement);
+  }, [updateScrollState]);
+
+  // Atualiza estado do scroll ao montar e quando o dia/conteúdo mudar
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    updateScrollState(el);
+    const ro = new ResizeObserver(() => updateScrollState(el));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [selectedDay, updateScrollState]);
+
   const handleExportCalendar = () => {
     const count = countExportableClasses(visibleDays, selectedGroupFilter);
     if (count === 0) {
@@ -156,7 +191,7 @@ export function StudentView() {
 
   return (
     <>
-    {!loadingInitial && (
+    {!showSplash && (
     <div
       className={`flex flex-col h-[100dvh] overflow-hidden ${bgClasses} transition-colors duration-300 max-w-md mx-auto md:h-auto md:min-h-screen md:overflow-visible`}
     >
@@ -230,19 +265,21 @@ export function StudentView() {
 
       {/* Área central rolável com fade nas extremidades */}
       <div className="relative flex-1 flex flex-col min-h-0 overflow-hidden md:overflow-visible md:min-h-0">
-        {/* Gradiente superior (fade top) */}
+        {/* Gradiente superior — opacidade 0 no topo para não sobrepor o primeiro card */}
         <div
-          className="absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-[#f8f7f5] to-transparent dark:from-zinc-950 pointer-events-none z-10"
+          className={`absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-[#f8f7f5] to-transparent dark:from-zinc-950 pointer-events-none z-10 transition-opacity duration-300 ${isAtTop ? 'opacity-0' : 'opacity-100'}`}
           aria-hidden
         />
-        {/* Gradiente inferior (fade bottom) */}
+        {/* Gradiente inferior — opacidade 0 no fim do scroll */}
         <div
-          className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-[#f8f7f5] to-transparent dark:from-zinc-950 pointer-events-none z-10"
+          className={`absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-[#f8f7f5] to-transparent dark:from-zinc-950 pointer-events-none z-10 transition-opacity duration-300 ${isAtBottom ? 'opacity-0' : 'opacity-100'}`}
           aria-hidden
         />
         {/* Contêiner de scroll — cards das matérias + swipe */}
         <div
-          className="h-full overflow-y-auto px-4 md:px-0 pb-12 pt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          ref={scrollContainerRef}
+          className="h-full overflow-y-auto px-4 md:px-0 pb-4 pt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          onScroll={handleScroll}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
@@ -256,15 +293,15 @@ export function StudentView() {
         </div>
       </div>
 
-      {/* Rodapé fixo */}
-      <div className={`flex-shrink-0 z-20 ${bgClasses} pb-[max(env(safe-area-inset-bottom),1.5rem)] pt-4`}>
-        <Footer />
+      {/* Rodapé fixo compacto */}
+      <div className={`flex-shrink-0 z-20 ${bgClasses} pt-2 pb-[max(env(safe-area-inset-bottom),16px)] flex justify-center items-center`}>
+        <Footer compact />
       </div>
     </div>
     )}
 
     <AnimatePresence>
-      {loadingInitial && <SplashScreenLoader key="splash" />}
+      {showSplash && <SplashScreenLoader key="splash" />}
     </AnimatePresence>
     </>
   );

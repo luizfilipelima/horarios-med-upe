@@ -81,7 +81,7 @@ export function ScheduleList({
         initial="hidden"
         animate="visible"
         exit="exit"
-        className="pb-10 flex flex-col gap-3"
+        className="pb-4 flex flex-col gap-3"
       >
         {filteredClasses.length === 0 ? (
           <motion.div
