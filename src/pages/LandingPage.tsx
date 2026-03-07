@@ -71,7 +71,7 @@ export function LandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto mb-10"
+              className="text-lg sm:text-xl text-slate-400 max-w-[511px] mx-auto mb-10"
             >
               O painel definitivo de horários, links e avaliações. Diga adeus ao caos do grupo do
               WhatsApp e tenha sua rotina acadêmica na palma da mão.
@@ -111,7 +111,7 @@ export function LandingPage() {
         </section>
 
         {/* Features Bento Box */}
-        <section className="pt-0 pb-20 px-4 sm:px-6 lg:px-8">
+        <section className="pt-0 pb-20 px-[25px] sm:px-6 lg:px-8">
           <div className="max-w-6xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               {[
@@ -154,7 +154,7 @@ export function LandingPage() {
         </section>
 
         {/* CTA Final */}
-        <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8">
+        <section className="pt-0 pb-20 sm:pb-28 px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -162,7 +162,7 @@ export function LandingPage() {
             transition={{ duration: 0.5 }}
             className="max-w-3xl mx-auto text-center rounded-3xl bg-indigo-900/20 border border-indigo-500/20 p-12 sm:p-16"
           >
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-50 mb-4">
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-50 mb-4 w-fit min-w-auto mx-auto">
               Pronto para evoluir sua turma?
             </h2>
             <p className="text-slate-400 mb-8 max-w-xl mx-auto">
