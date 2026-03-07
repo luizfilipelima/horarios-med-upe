@@ -92,28 +92,26 @@ export function StudentView() {
   // Sincronizar grupo da URL com o state e localStorage; restaurar grupo salvo quando URL não tem (ex.: PWA abre sem query)
   useEffect(() => {
     const g = searchParams.get('grupo');
-    if (g && g !== FILTER_TODOS && slug) setStoredGrupo(slug, g);
-    if (g && g !== FILTER_TODOS) {
-      if (groups.length > 0 && groups.includes(g) && selectedGroupFilter !== g) {
-        setSelectedGroupFilterState(g);
+    // URL sem grupo ou com grupo=TODOS → exibir "Todos" (após verificar se deve restaurar stored)
+    if (!g || g === FILTER_TODOS) {
+      if (!loadingInitial && slug && groups.length > 0) {
+        const stored = getStoredGrupo(slug);
+        if (stored && groups.includes(stored)) {
+          navigate(`/t/${slug}?grupo=${encodeURIComponent(stored)}`, { replace: true });
+          setSelectedGroupFilterState(stored);
+          return;
+        }
       }
+      if (selectedGroupFilter !== FILTER_TODOS) {
+        setSelectedGroupFilterState(FILTER_TODOS);
+      }
+      if (slug) setStoredGrupo(slug, FILTER_TODOS);
       return;
     }
-    if (!loadingInitial && slug && groups.length > 0) {
-      const stored = getStoredGrupo(slug);
-      if (stored && groups.includes(stored)) {
-        navigate(`/t/${slug}?grupo=${encodeURIComponent(stored)}`, { replace: true });
-        setSelectedGroupFilterState(stored);
-        return;
-      }
+    if (slug) setStoredGrupo(slug, g);
+    if (groups.length > 0 && groups.includes(g) && selectedGroupFilter !== g) {
+      setSelectedGroupFilterState(g);
     }
-    // Só resetar para "Todos" quando não há grupo na URL e não há stored para restaurar
-    // (evita reset prematuro: se temos stored e groups ainda não carregou, esperamos; se groups já carregou e stored é inválido, resetamos)
-    const storedForReset = slug ? getStoredGrupo(slug) : null;
-    const waitingToRestore = storedForReset && groups.length === 0;
-    const storedInvalid = storedForReset && groups.length > 0 && !groups.includes(storedForReset);
-    const shouldReset = (!g || g === FILTER_TODOS) && !waitingToRestore && (!storedForReset || storedInvalid) && selectedGroupFilter !== FILTER_TODOS;
-    if (shouldReset) setSelectedGroupFilterState(FILTER_TODOS);
   }, [searchParams, groups, loadingInitial, slug, navigate, selectedGroupFilter]);
 
   useEffect(() => {

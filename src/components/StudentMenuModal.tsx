@@ -76,7 +76,7 @@ export function StudentMenuModal({
                   <GroupFilter
                     groups={groups}
                     selected={selectedGroupFilter}
-                    onSelect={setSelectedGroupFilter}
+                    onSelect={(v) => { setSelectedGroupFilter(v); onClose(); }}
                   />
                 </section>
 
