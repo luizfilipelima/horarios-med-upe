@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "generate:og-image": "node scripts/generate-og-image.mjs",
-    "build": "npm run generate:og-image && tsc -b && vite build",
+    "generate:pwa-icons": "node scripts/generate-pwa-icons.mjs",
+    "build": "npm run generate:og-image && npm run generate:pwa-icons && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },

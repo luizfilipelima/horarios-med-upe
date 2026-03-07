@@ -45,6 +45,7 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
   const { schedule, visibleDays, groups, addAula, updateAulaById, removeAulaById } = useApp();
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingDayId, setEditingDayId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [expandedDays, setExpandedDays] = useState<Set<string>>(() => new Set(['lunes']));
   const [duplicating, setDuplicating] = useState<{ aula: ClassItem; sourceDayId: string } | null>(null);
@@ -79,6 +80,8 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
       grupoAlvo: item.grupoAlvo || 'Todos',
     });
     setEditingId(item.id ?? null);
+    setEditingDayId(dayId);
+    setExpandedDays((prev) => new Set(prev).add(dayId));
     setFormOpen(true);
   };
 
@@ -119,6 +122,7 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
     setFormOpen(false);
     setForm(emptyForm);
     setEditingId(null);
+    setEditingDayId(null);
   };
 
   const handleRemove = (id: string) => {
@@ -276,9 +280,9 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
                 </AnimatePresence>
 
                 <AnimatePresence mode="wait">
-                  {formOpen ? (
+                  {formOpen && !editingId ? (
                     <motion.div
-                      key="form"
+                      key="form-add"
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
@@ -286,7 +290,7 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
                       className="rounded-3xl border-2 border-indigo-200 dark:border-indigo-500/40 bg-indigo-50/50 dark:bg-indigo-500/5 p-4 sm:p-5"
                     >
                       <h3 className="text-base font-bold text-gray-900 dark:text-zinc-100 mb-4">
-                        {editingId ? 'Editar matéria' : 'Nova matéria'}
+                        Nova matéria
                       </h3>
                       <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
@@ -400,6 +404,7 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
                               setFormOpen(false);
                               setForm(emptyForm);
                               setEditingId(null);
+                              setEditingDayId(null);
                             }}
                             className="flex-1 py-3 rounded-2xl border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-sm hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
                           >
@@ -409,7 +414,7 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
                             type="submit"
                             className="flex-1 py-3 rounded-2xl bg-indigo-500 text-white font-semibold text-sm hover:bg-indigo-600 transition-colors"
                           >
-                            {editingId ? 'Salvar' : 'Adicionar'}
+                            Adicionar
                           </button>
                         </div>
                       </form>
@@ -464,60 +469,165 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
                                       Nenhuma aula neste dia
                                     </p>
                                   ) : (
-                                    sorted.map((aula) => (
-                                      <motion.div
-                                        key={aula.id ?? aula.subject + aula.time}
-                                        layout
-                                        initial={{ opacity: 0, y: 4 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, x: -8 }}
-                                        className="flex items-center gap-3 px-3 py-3 rounded-xl bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-700"
-                                      >
-                                        <div className="flex-1 min-w-0">
-                                          <div className="flex items-center gap-2 flex-wrap">
-                                            <p className="font-medium text-gray-900 dark:text-zinc-100 truncate">
-                                              {aula.subject || '(Sem nome)'}
+                                    sorted.map((aula) =>
+                                      editingId && editingDayId === day.id && aula.id === editingId ? (
+                                        <motion.div
+                                          key={`edit-${aula.id}`}
+                                          layout
+                                          initial={{ opacity: 0, y: 4 }}
+                                          animate={{ opacity: 1, y: 0 }}
+                                          exit={{ opacity: 0, x: -8 }}
+                                          className="rounded-xl border-2 border-indigo-200 dark:border-indigo-500/40 bg-indigo-50/50 dark:bg-indigo-500/5 p-4"
+                                        >
+                                          <h3 className="text-sm font-bold text-gray-900 dark:text-zinc-100 mb-3">
+                                            Editar matéria
+                                          </h3>
+                                          <form onSubmit={handleSubmit} className="space-y-3">
+                                            <input
+                                              type="text"
+                                              value={form.subject}
+                                              onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))}
+                                              placeholder="Nome da matéria"
+                                              className={inputClass}
+                                              required
+                                            />
+                                            <input
+                                              type="text"
+                                              value={form.professor}
+                                              onChange={(e) => setForm((f) => ({ ...f, professor: e.target.value }))}
+                                              placeholder="Professor"
+                                              className={inputClass}
+                                            />
+                                            <div className="flex flex-wrap gap-2">
+                                              {(visibleDays.length > 0 ? visibleDays : schedule.slice(0, 5)).map((d) => {
+                                                const checked = form.dias_semana.includes(d.id);
+                                                return (
+                                                  <button
+                                                    key={d.id}
+                                                    type="button"
+                                                    onClick={() => toggleFormDay(d.id)}
+                                                    className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors min-h-[40px] ${
+                                                      checked ? 'bg-indigo-500 text-white' : 'bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300'
+                                                    }`}
+                                                  >
+                                                    {checked && <Check size={14} strokeWidth={2} />}
+                                                    {d.shortLabel}
+                                                  </button>
+                                                );
+                                              })}
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <input
+                                                type="time"
+                                                value={form.horarioInicio}
+                                                onChange={(e) => setForm((f) => ({ ...f, horarioInicio: e.target.value }))}
+                                                className={inputClass}
+                                              />
+                                              <input
+                                                type="time"
+                                                value={form.horarioFim}
+                                                onChange={(e) => setForm((f) => ({ ...f, horarioFim: e.target.value }))}
+                                                className={inputClass}
+                                              />
+                                            </div>
+                                            <select
+                                              value={form.type}
+                                              onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as ClassType }))}
+                                              className={`${inputClass} select-arrow select-arrow-right`}
+                                            >
+                                              {TIPOS.map((t) => (
+                                                <option key={t.value} value={t.value}>{t.label}</option>
+                                              ))}
+                                            </select>
+                                            <input
+                                              type="text"
+                                              value={form.location}
+                                              onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+                                              placeholder="Sala / Local"
+                                              className={inputClass}
+                                            />
+                                            <select
+                                              value={form.grupoAlvo === GRUPO_TODOS || !groups.includes(form.grupoAlvo) ? GRUPO_TODOS : form.grupoAlvo}
+                                              onChange={(e) => setForm((f) => ({ ...f, grupoAlvo: e.target.value }))}
+                                              className={`${inputClass} select-arrow select-arrow-right`}
+                                            >
+                                              <option value={GRUPO_TODOS}>Todos</option>
+                                              {groups.map((g) => (
+                                                <option key={g} value={g}>{g}</option>
+                                              ))}
+                                            </select>
+                                            <div className="flex gap-2 pt-1">
+                                              <button
+                                                type="button"
+                                                onClick={() => { setFormOpen(false); setForm(emptyForm); setEditingId(null); setEditingDayId(null); }}
+                                                className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-xs"
+                                              >
+                                                Cancelar
+                                              </button>
+                                              <button
+                                                type="submit"
+                                                className="flex-1 py-2.5 rounded-xl bg-indigo-500 text-white font-semibold text-xs"
+                                              >
+                                                Salvar
+                                              </button>
+                                            </div>
+                                          </form>
+                                        </motion.div>
+                                      ) : (
+                                        <motion.div
+                                          key={aula.id ?? aula.subject + aula.time}
+                                          layout
+                                          initial={{ opacity: 0, y: 4 }}
+                                          animate={{ opacity: 1, y: 0 }}
+                                          exit={{ opacity: 0, x: -8 }}
+                                          className="flex items-center gap-3 px-3 py-3 rounded-xl bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-700"
+                                        >
+                                          <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                              <p className="font-medium text-gray-900 dark:text-zinc-100 truncate">
+                                                {aula.subject || '(Sem nome)'}
+                                              </p>
+                                              {aula.grupoAlvo && aula.grupoAlvo !== GRUPO_TODOS && (
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 shrink-0">
+                                                  <Users size={10} strokeWidth={2} />
+                                                  {aula.grupoAlvo}
+                                                </span>
+                                              )}
+                                            </div>
+                                            <p className="text-xs text-gray-500 dark:text-zinc-500">
+                                              {aula.time}
+                                              {aula.professor && ` · ${aula.professor}`}
                                             </p>
-                                            {aula.grupoAlvo && aula.grupoAlvo !== GRUPO_TODOS && (
-                                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 shrink-0">
-                                                <Users size={10} strokeWidth={2} />
-                                                {aula.grupoAlvo}
-                                              </span>
-                                            )}
                                           </div>
-                                          <p className="text-xs text-gray-500 dark:text-zinc-500">
-                                            {aula.time}
-                                            {aula.professor && ` · ${aula.professor}`}
-                                          </p>
-                                        </div>
-                                        <div className="flex items-center gap-1 flex-shrink-0">
-                                          <button
-                                            type="button"
-                                            onClick={() => startDuplicate(aula, day.id)}
-                                            className="p-2.5 rounded-xl text-gray-400 dark:text-zinc-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                                            aria-label="Duplicar"
-                                          >
-                                            <Copy size={18} strokeWidth={2} />
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() => startEdit(aula, day.id)}
-                                            className="p-2.5 rounded-xl text-gray-400 dark:text-zinc-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                                            aria-label="Editar"
-                                          >
-                                            <Pencil size={18} strokeWidth={2} />
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() => aula.id && handleRemove(aula.id)}
-                                            className="p-2.5 rounded-xl text-gray-400 dark:text-zinc-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                                            aria-label="Excluir"
-                                          >
-                                            <Trash2 size={18} strokeWidth={2} />
-                                          </button>
-                                        </div>
-                                      </motion.div>
-                                    ))
+                                          <div className="flex items-center gap-1 flex-shrink-0">
+                                            <button
+                                              type="button"
+                                              onClick={() => startDuplicate(aula, day.id)}
+                                              className="p-2.5 rounded-xl text-gray-400 dark:text-zinc-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                                              aria-label="Duplicar"
+                                            >
+                                              <Copy size={18} strokeWidth={2} />
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => startEdit(aula, day.id)}
+                                              className="p-2.5 rounded-xl text-gray-400 dark:text-zinc-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                                              aria-label="Editar"
+                                            >
+                                              <Pencil size={18} strokeWidth={2} />
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => aula.id && handleRemove(aula.id)}
+                                              className="p-2.5 rounded-xl text-gray-400 dark:text-zinc-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                                              aria-label="Excluir"
+                                            >
+                                              <Trash2 size={18} strokeWidth={2} />
+                                            </button>
+                                          </div>
+                                        </motion.div>
+                                      )
+                                    )
                                   )}
                                 </div>
                               </motion.div>

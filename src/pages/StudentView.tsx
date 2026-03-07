@@ -9,6 +9,7 @@ import { Footer } from '../components/Footer';
 import { StudentMenuModal } from '../components/StudentMenuModal';
 import { EventsTimelineModal } from '../components/EventsTimelineModal';
 import { SubjectDetailsModal } from '../components/SubjectDetailsModal';
+import { InstallPrompt } from '../components/InstallPrompt';
 import type { ClassItem } from '../data/schedule';
 import { FILTER_TODOS } from '../components/GroupFilter';
 import { generateICS, downloadICS, countExportableClasses } from '../utils/generateICS';
@@ -141,6 +142,7 @@ export function StudentView() {
         futureEventsCount={futureEventsCount}
       />
       <EventsTimelineModal isOpen={eventsTimelineOpen} onClose={() => setEventsTimelineOpen(false)} />
+      <InstallPrompt />
       <SubjectDetailsModal
         isOpen={Boolean(selectedSubject)}
         onClose={() => setSelectedSubject(null)}
