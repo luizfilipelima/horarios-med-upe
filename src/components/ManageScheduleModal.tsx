@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, Plus, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Plus, Pencil, Trash2, ChevronDown, ChevronUp, Users, Copy, Check } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { DAYS_ORDER, formatTimeRange } from '../data/schedule';
+import { formatTimeRange, GRUPO_TODOS } from '../data/schedule';
 import type { ClassItem, ClassType } from '../data/schedule';
 
 const inputClass =
@@ -11,7 +11,12 @@ const inputClass =
 const sectionLabelClass =
   'block text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-2';
 
-const DIAS_OPCOES = DAYS_ORDER.map((d) => ({ value: d.id, label: d.label }));
+function getAulaHorarios(aula: ClassItem): { inicio: string; fim: string } {
+  if (aula.horarioInicio && aula.horarioFim)
+    return { inicio: aula.horarioInicio, fim: aula.horarioFim };
+  const parts = (aula.time || '').split(/\s*-\s*/).map((p) => p.trim());
+  return { inicio: parts[0] || '08:00', fim: parts[1] || '10:00' };
+}
 
 const TIPOS: { value: ClassType; label: string }[] = [
   { value: 'teoria', label: 'Teoria' },
@@ -28,7 +33,7 @@ interface ManageScheduleModalProps {
 const emptyForm = {
   subject: '',
   professor: '',
-  dia_semana: 'lunes',
+  dias_semana: ['lunes'] as string[],
   horarioInicio: '08:00',
   horarioFim: '10:00',
   type: 'teoria' as ClassType,
@@ -37,11 +42,13 @@ const emptyForm = {
 };
 
 export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProps) {
-  const { schedule, visibleDays, addAula, updateAulaById, removeAulaById } = useApp();
+  const { schedule, visibleDays, groups, addAula, updateAulaById, removeAulaById } = useApp();
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [expandedDays, setExpandedDays] = useState<Set<string>>(() => new Set(['lunes']));
+  const [duplicating, setDuplicating] = useState<{ aula: ClassItem; sourceDayId: string } | null>(null);
+  const [duplicateTargetDays, setDuplicateTargetDays] = useState<Set<string>>(new Set());
 
   const toggleDay = (dayId: string) => {
     setExpandedDays((prev) => {
@@ -53,16 +60,18 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
   };
 
   const startAdd = () => {
+    setDuplicating(null);
     setForm(emptyForm);
     setEditingId(null);
     setFormOpen(true);
   };
 
   const startEdit = (item: ClassItem, dayId: string) => {
+    setDuplicating(null);
     setForm({
       subject: item.subject,
       professor: item.professor,
-      dia_semana: dayId,
+      dias_semana: [dayId],
       horarioInicio: item.horarioInicio ?? '08:00',
       horarioFim: item.horarioFim ?? '10:00',
       type: item.type,
@@ -73,14 +82,22 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
     setFormOpen(true);
   };
 
+  const toggleFormDay = (dayId: string) => {
+    setForm((prev) => {
+      const next = prev.dias_semana.includes(dayId)
+        ? prev.dias_semana.filter((d) => d !== dayId)
+        : [...prev.dias_semana, dayId];
+      return { ...prev, dias_semana: next.length > 0 ? next : prev.dias_semana };
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.subject.trim()) return;
+    if (!form.subject.trim() || form.dias_semana.length === 0) return;
 
-    const classItem: Omit<ClassItem, 'id'> & { dia_semana: string } = {
+    const baseItem: Omit<ClassItem, 'id'> = {
       subject: form.subject.trim(),
       professor: form.professor.trim(),
-      dia_semana: form.dia_semana,
       horarioInicio: form.horarioInicio,
       horarioFim: form.horarioFim,
       type: form.type,
@@ -90,9 +107,14 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
     };
 
     if (editingId) {
-      updateAulaById(editingId, classItem);
+      updateAulaById(editingId, { ...baseItem, dia_semana: form.dias_semana[0]! });
+      form.dias_semana.slice(1).forEach((dayId) => {
+        addAula({ ...baseItem, dia_semana: dayId });
+      });
     } else {
-      addAula(classItem);
+      form.dias_semana.forEach((dayId) => {
+        addAula({ ...baseItem, dia_semana: dayId });
+      });
     }
     setFormOpen(false);
     setForm(emptyForm);
@@ -103,6 +125,42 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
     if (typeof window !== 'undefined' && window.confirm('Excluir esta matéria?')) {
       removeAulaById(id);
     }
+  };
+
+  const startDuplicate = (aula: ClassItem, sourceDayId: string) => {
+    setFormOpen(false);
+    setDuplicating({ aula, sourceDayId });
+    setDuplicateTargetDays(new Set([sourceDayId]));
+  };
+
+  const toggleDuplicateDay = (dayId: string) => {
+    setDuplicateTargetDays((prev) => {
+      const next = new Set(prev);
+      if (next.has(dayId)) next.delete(dayId);
+      else next.add(dayId);
+      return next;
+    });
+  };
+
+  const confirmDuplicate = () => {
+    if (!duplicating || duplicateTargetDays.size === 0) return;
+    const { aula } = duplicating;
+    const { inicio, fim } = getAulaHorarios(aula);
+    const baseItem: Omit<ClassItem, 'id'> = {
+      subject: aula.subject,
+      professor: aula.professor,
+      horarioInicio: inicio,
+      horarioFim: fim,
+      type: aula.type,
+      location: aula.location,
+      grupoAlvo: aula.grupoAlvo || 'Todos',
+      time: formatTimeRange(inicio, fim),
+    };
+    duplicateTargetDays.forEach((dayId) => {
+      addAula({ ...baseItem, dia_semana: dayId });
+    });
+    setDuplicating(null);
+    setDuplicateTargetDays(new Set());
   };
 
   const daysToShow = visibleDays.length > 0 ? visibleDays : schedule.slice(0, 5);
@@ -156,6 +214,68 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
                 </motion.button>
 
                 <AnimatePresence mode="wait">
+                  {duplicating ? (
+                    <motion.div
+                      key="duplicate-panel"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="rounded-3xl border-2 border-indigo-200 dark:border-indigo-500/40 bg-indigo-50/50 dark:bg-indigo-500/5 p-4 sm:p-5"
+                    >
+                      <h3 className="text-base font-bold text-gray-900 dark:text-zinc-100 mb-2">
+                        Duplicar aula
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-zinc-400 mb-4 truncate">
+                        {duplicating.aula.subject || '(Sem nome)'}
+                      </p>
+                      <label className={sectionLabelClass}>Copiar para os dias:</label>
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {daysToShow.map((d) => {
+                          const checked = duplicateTargetDays.has(d.id);
+                          return (
+                            <button
+                              key={d.id}
+                              type="button"
+                              onClick={() => toggleDuplicateDay(d.id)}
+                              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors min-h-[44px] ${
+                                checked
+                                  ? 'bg-indigo-500 text-white'
+                                  : 'bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:border-indigo-300 dark:hover:border-indigo-500/50'
+                              }`}
+                            >
+                              {checked && <Check size={16} strokeWidth={2} />}
+                              {d.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDuplicating(null);
+                            setDuplicateTargetDays(new Set());
+                          }}
+                          className="flex-1 py-3 rounded-2xl border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-sm hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={confirmDuplicate}
+                          disabled={duplicateTargetDays.size === 0}
+                          className="flex-1 py-3 rounded-2xl bg-indigo-500 text-white font-semibold text-sm hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                        >
+                          <Copy size={18} strokeWidth={2} />
+                          Duplicar {duplicateTargetDays.size > 0 ? `(${duplicateTargetDays.size})` : ''}
+                        </button>
+                      </div>
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
+
+                <AnimatePresence mode="wait">
                   {formOpen ? (
                     <motion.div
                       key="form"
@@ -191,18 +311,30 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
                           />
                         </div>
                         <div>
-                          <label className={sectionLabelClass}>Dia da Semana</label>
-                          <select
-                            value={form.dia_semana}
-                            onChange={(e) => setForm((f) => ({ ...f, dia_semana: e.target.value }))}
-                            className={`${inputClass} select-arrow select-arrow-right`}
-                          >
-                            {DIAS_OPCOES.map((d) => (
-                              <option key={d.value} value={d.value}>
-                                {d.label}
-                              </option>
-                            ))}
-                          </select>
+                          <label className={sectionLabelClass}>Dias da Semana</label>
+                          <p className="text-xs text-gray-500 dark:text-zinc-500 mb-2">
+                            Selecione um ou mais dias
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {(visibleDays.length > 0 ? visibleDays : schedule.slice(0, 5)).map((d) => {
+                              const checked = form.dias_semana.includes(d.id);
+                              return (
+                                <button
+                                  key={d.id}
+                                  type="button"
+                                  onClick={() => toggleFormDay(d.id)}
+                                  className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[44px] ${
+                                    checked
+                                      ? 'bg-indigo-500 text-white'
+                                      : 'bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:border-indigo-300 dark:hover:border-indigo-500/50'
+                                  }`}
+                                >
+                                  {checked && <Check size={16} strokeWidth={2} />}
+                                  {d.label}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
@@ -249,14 +381,17 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
                           />
                         </div>
                         <div>
-                          <label className={sectionLabelClass}>Grupo (opcional)</label>
-                          <input
-                            type="text"
-                            value={form.grupoAlvo === 'Todos' ? '' : form.grupoAlvo}
-                            onChange={(e) => setForm((f) => ({ ...f, grupoAlvo: e.target.value || 'Todos' }))}
-                            placeholder="Ex: Grupo C.1"
-                            className={inputClass}
-                          />
+                          <label className={sectionLabelClass}>Grupo</label>
+                          <select
+                            value={form.grupoAlvo === GRUPO_TODOS || !groups.includes(form.grupoAlvo) ? GRUPO_TODOS : form.grupoAlvo}
+                            onChange={(e) => setForm((f) => ({ ...f, grupoAlvo: e.target.value }))}
+                            className={`${inputClass} select-arrow select-arrow-right`}
+                          >
+                            <option value={GRUPO_TODOS}>Todos</option>
+                            {groups.map((g) => (
+                              <option key={g} value={g}>{g}</option>
+                            ))}
+                          </select>
                         </div>
                         <div className="flex gap-3 pt-2">
                           <button
@@ -339,15 +474,31 @@ export function ManageScheduleModal({ isOpen, onClose }: ManageScheduleModalProp
                                         className="flex items-center gap-3 px-3 py-3 rounded-xl bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-700"
                                       >
                                         <div className="flex-1 min-w-0">
-                                          <p className="font-medium text-gray-900 dark:text-zinc-100 truncate">
-                                            {aula.subject || '(Sem nome)'}
-                                          </p>
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <p className="font-medium text-gray-900 dark:text-zinc-100 truncate">
+                                              {aula.subject || '(Sem nome)'}
+                                            </p>
+                                            {aula.grupoAlvo && aula.grupoAlvo !== GRUPO_TODOS && (
+                                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 shrink-0">
+                                                <Users size={10} strokeWidth={2} />
+                                                {aula.grupoAlvo}
+                                              </span>
+                                            )}
+                                          </div>
                                           <p className="text-xs text-gray-500 dark:text-zinc-500">
                                             {aula.time}
                                             {aula.professor && ` · ${aula.professor}`}
                                           </p>
                                         </div>
                                         <div className="flex items-center gap-1 flex-shrink-0">
+                                          <button
+                                            type="button"
+                                            onClick={() => startDuplicate(aula, day.id)}
+                                            className="p-2.5 rounded-xl text-gray-400 dark:text-zinc-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                                            aria-label="Duplicar"
+                                          >
+                                            <Copy size={18} strokeWidth={2} />
+                                          </button>
                                           <button
                                             type="button"
                                             onClick={() => startEdit(aula, day.id)}

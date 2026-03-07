@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTurma } from '../context/TurmaContext';
 import { DaySelector } from '../components/DaySelector';
 import { ScheduleList } from '../components/ScheduleList';
-import { FILTER_TODOS } from '../components/GroupFilter';
+import { GroupFilter, FILTER_TODOS } from '../components/GroupFilter';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { Footer } from '../components/Footer';
 import { SettingsModal } from '../components/SettingsModal';
@@ -19,6 +19,7 @@ export function DelegadoView() {
     tituloPrincipal,
     subtitulo,
     getInitialDayId,
+    groups,
     toast,
   } = useApp();
   const { signOut } = useAuth();
@@ -28,6 +29,7 @@ export function DelegadoView() {
   const [eventsModalOpen, setEventsModalOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [selectedId, setSelectedId] = useState<string>(() => getInitialDayId());
+  const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>(FILTER_TODOS);
   const selectedDay = visibleDays.find((d) => d.id === selectedId) ?? visibleDays[0];
 
   useEffect(() => {
@@ -35,6 +37,16 @@ export function DelegadoView() {
       setSelectedId(visibleDays[0].id);
     }
   }, [visibleDays, selectedId]);
+
+  useEffect(() => {
+    if (
+      selectedGroupFilter !== FILTER_TODOS &&
+      groups.length > 0 &&
+      !groups.includes(selectedGroupFilter)
+    ) {
+      setSelectedGroupFilter(FILTER_TODOS);
+    }
+  }, [groups, selectedGroupFilter]);
 
   const schedulePageUrl = typeof window !== 'undefined' && slug
     ? `${window.location.origin}/t/${slug}`
@@ -177,8 +189,8 @@ export function DelegadoView() {
         )}
       </AnimatePresence>
 
-      {/* Seletor de Dias — mesmo respiro da página do aluno (mb-5) */}
-      <div className="px-5 mb-5">
+      {/* Seletor de Dias */}
+      <div className="px-5 mb-4">
         <DaySelector
           days={visibleDays}
           selectedId={selectedId}
@@ -187,6 +199,17 @@ export function DelegadoView() {
         />
       </div>
 
+      {/* Filtro de Grupo — mostra matérias vinculadas ao grupo selecionado */}
+      {!loadingInitial && groups.length > 0 && (
+        <div className="px-5 mb-4">
+          <GroupFilter
+            groups={groups}
+            selected={selectedGroupFilter}
+            onSelect={setSelectedGroupFilter}
+          />
+        </div>
+      )}
+
       <div className="px-5 pb-10">
         {loadingInitial ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
@@ -194,7 +217,7 @@ export function DelegadoView() {
             <span className="text-sm text-gray-500 dark:text-zinc-500">Carregando horários...</span>
           </div>
         ) : selectedDay ? (
-          <ScheduleList day={selectedDay} selectedGroupFilter={FILTER_TODOS} />
+          <ScheduleList day={selectedDay} selectedGroupFilter={selectedGroupFilter} />
         ) : null}
       </div>
 

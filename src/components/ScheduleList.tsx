@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { CalendarX } from 'lucide-react';
-import type { DaySchedule } from '../data/schedule';
+import type { ClassItem, DaySchedule } from '../data/schedule';
 import { GRUPO_TODOS } from '../data/schedule';
 import { ClassCard } from './ClassCard';
 import { FILTER_TODOS } from './GroupFilter';
@@ -8,6 +8,7 @@ import { FILTER_TODOS } from './GroupFilter';
 interface ScheduleListProps {
   day: DaySchedule;
   selectedGroupFilter: string;
+  onCardClick?: (item: ClassItem) => void;
 }
 
 const containerVariants = {
@@ -23,7 +24,7 @@ function filterClasses(day: DaySchedule, selectedGroupFilter: string) {
   );
 }
 
-export function ScheduleList({ day, selectedGroupFilter }: ScheduleListProps) {
+export function ScheduleList({ day, selectedGroupFilter, onCardClick }: ScheduleListProps) {
   const filteredClasses = filterClasses(day, selectedGroupFilter);
 
   return (
@@ -53,6 +54,7 @@ export function ScheduleList({ day, selectedGroupFilter }: ScheduleListProps) {
               key={`${day.id}-${cls.subject}-${cls.time}-${cls.location}-${i}`}
               item={cls}
               index={i}
+              onClick={onCardClick ? () => onCardClick(cls) : undefined}
             />
           ))
         )}

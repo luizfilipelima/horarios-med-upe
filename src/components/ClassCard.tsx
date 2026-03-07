@@ -6,6 +6,7 @@ import { GRUPO_TODOS } from '../data/schedule';
 interface ClassCardProps {
   item: ClassItem;
   index: number;
+  onClick?: () => void;
 }
 
 interface TypeConfig {
@@ -65,19 +66,21 @@ const cardVariants: import('framer-motion').Variants = {
   }),
 };
 
-export function ClassCard({ item, index }: ClassCardProps) {
+export function ClassCard({ item, index, onClick }: ClassCardProps) {
   const config = typeConfig[item.type];
 
-  return (
-    <motion.div
-      layout
-      custom={index}
-      variants={cardVariants}
-      initial="hidden"
-      animate="visible"
-      transition={{ layout: { type: 'spring', stiffness: 350, damping: 30 } }}
-      className={`rounded-3xl border p-5 ${config.bg} ${config.border} flex flex-col gap-3`}
-    >
+  const baseProps = {
+    layout: true as const,
+    custom: index,
+    variants: cardVariants,
+    initial: 'hidden' as const,
+    animate: 'visible' as const,
+    transition: { layout: { type: 'spring' as const, stiffness: 350, damping: 30 } },
+    className: `rounded-3xl border p-5 ${config.bg} ${config.border} flex flex-col gap-3 text-left w-full`,
+  };
+
+  const content = (
+    <>
       <div className="flex items-start justify-between gap-2">
         <h3 className="text-base font-bold text-gray-900 dark:text-zinc-100 leading-tight flex-1 min-w-0">
           {item.subject}
@@ -110,6 +113,22 @@ export function ClassCard({ item, index }: ClassCardProps) {
           <span className="text-sm text-gray-400 dark:text-zinc-500 italic">{item.professor}</span>
         </div>
       </div>
-    </motion.div>
+    </>
   );
+
+  if (onClick) {
+    return (
+      <motion.button
+        type="button"
+        {...baseProps}
+        onClick={onClick}
+        whileTap={{ scale: 0.98 }}
+        className={`${baseProps.className} cursor-pointer`}
+      >
+        {content}
+      </motion.button>
+    );
+  }
+
+  return <motion.div {...baseProps}>{content}</motion.div>;
 }

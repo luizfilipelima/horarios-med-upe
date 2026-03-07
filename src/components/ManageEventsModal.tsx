@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, Plus, Trash2, Loader2, CalendarClock } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -37,7 +37,17 @@ function formatEventDate(iso: string): string {
 }
 
 export function ManageEventsModal({ isOpen, onClose }: ManageEventsModalProps) {
-  const { eventos, addEvento, removeEvento, savingMessage } = useApp();
+  const { schedule, eventos, addEvento, removeEvento, savingMessage } = useApp();
+
+  const materias = useMemo(() => {
+    const set = new Set<string>();
+    for (const day of schedule) {
+      for (const c of day.classes) {
+        if (c.subject?.trim()) set.add(c.subject.trim());
+      }
+    }
+    return Array.from(set).sort();
+  }, [schedule]);
 
   const [titulo, setTitulo] = useState('');
   const [materia, setMateria] = useState('');
@@ -116,13 +126,20 @@ export function ManageEventsModal({ isOpen, onClose }: ManageEventsModalProps) {
                         className={inputClass}
                         required
                       />
-                      <input
-                        type="text"
+                      <select
                         value={materia}
                         onChange={(e) => setMateria(e.target.value)}
-                        placeholder="Matéria"
-                        className={inputClass}
-                      />
+                        className={`${inputClass} select-arrow select-arrow-right`}
+                      >
+                        <option value="" disabled={materias.length === 0}>
+                          {materias.length === 0 ? 'Cadastre uma matéria primeiro' : 'Selecione a matéria'}
+                        </option>
+                        {materias.map((m) => (
+                          <option key={m} value={m}>
+                            {m}
+                          </option>
+                        ))}
+                      </select>
                       <div className="relative">
                         <div
                           className={`flex items-center gap-3 ${inputClass} pointer-events-none min-h-[44px]`}

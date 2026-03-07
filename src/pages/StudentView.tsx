@@ -8,6 +8,8 @@ import { ThemeToggle } from '../components/ThemeToggle';
 import { Footer } from '../components/Footer';
 import { StudentMenuModal } from '../components/StudentMenuModal';
 import { EventsTimelineModal } from '../components/EventsTimelineModal';
+import { SubjectDetailsModal } from '../components/SubjectDetailsModal';
+import type { ClassItem } from '../data/schedule';
 import { FILTER_TODOS } from '../components/GroupFilter';
 import { generateICS, downloadICS, countExportableClasses } from '../utils/generateICS';
 import { diasAteEvento } from '../utils/eventos';
@@ -16,6 +18,7 @@ export function StudentView() {
   const { visibleDays, tituloPrincipal, subtitulo, googleDriveUrl, platformUrl, getInitialDayId, groups, eventos, loadingInitial } = useApp();
   const [menuOpen, setMenuOpen] = useState(false);
   const [eventsTimelineOpen, setEventsTimelineOpen] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState<ClassItem | null>(null);
 
   const futureEventsCount = useMemo(
     () => eventos.filter((e) => diasAteEvento(e.data) >= 0).length,
@@ -138,6 +141,12 @@ export function StudentView() {
         futureEventsCount={futureEventsCount}
       />
       <EventsTimelineModal isOpen={eventsTimelineOpen} onClose={() => setEventsTimelineOpen(false)} />
+      <SubjectDetailsModal
+        isOpen={Boolean(selectedSubject)}
+        onClose={() => setSelectedSubject(null)}
+        item={selectedSubject}
+        eventos={eventos}
+      />
 
       {/* Seletor de Dias */}
       <div className="px-5 mb-5">
@@ -150,7 +159,11 @@ export function StudentView() {
 
       {/* Cards de Aula */}
       <div className="px-5 pb-6">
-        <ScheduleList day={selectedDay} selectedGroupFilter={selectedGroupFilter} />
+        <ScheduleList
+          day={selectedDay}
+          selectedGroupFilter={selectedGroupFilter}
+          onCardClick={(item) => setSelectedSubject(item)}
+        />
       </div>
 
       <Footer />
