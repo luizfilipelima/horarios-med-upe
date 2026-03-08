@@ -91,7 +91,15 @@ export function StudentView() {
   // Sincronizar grupo da URL com o state e localStorage; restaurar grupo salvo quando URL não tem (ex.: PWA abre sem query)
   useEffect(() => {
     const g = searchParams.get('grupo');
-    // URL sem grupo ou com grupo=TODOS → exibir "Todos" (após verificar se deve restaurar stored)
+    // URL com grupo válido: sincronizar state e storage
+    if (g && g !== FILTER_TODOS) {
+      if (slug) setStoredGrupo(slug, g);
+      if (groups.length > 0 && groups.includes(g) && selectedGroupFilter !== g) {
+        setSelectedGroupFilterState(g);
+      }
+      return;
+    }
+    // URL sem grupo: tentar restaurar do localStorage (PWA/atalho abre sem query)
     if (!g || g === FILTER_TODOS) {
       if (!loadingInitial && slug && groups.length > 0) {
         const stored = getStoredGrupo(slug);
@@ -101,15 +109,11 @@ export function StudentView() {
           return;
         }
       }
-      if (selectedGroupFilter !== FILTER_TODOS) {
+      // Só resetar para Todos se já tivermos os groups (não sobrescrever durante loading)
+      if (!loadingInitial && groups.length > 0 && selectedGroupFilter !== FILTER_TODOS) {
         setSelectedGroupFilterState(FILTER_TODOS);
+        if (slug) setStoredGrupo(slug, FILTER_TODOS);
       }
-      if (slug) setStoredGrupo(slug, FILTER_TODOS);
-      return;
-    }
-    if (slug) setStoredGrupo(slug, g);
-    if (groups.length > 0 && groups.includes(g) && selectedGroupFilter !== g) {
-      setSelectedGroupFilterState(g);
     }
   }, [searchParams, groups, loadingInitial, slug, navigate, selectedGroupFilter]);
 
