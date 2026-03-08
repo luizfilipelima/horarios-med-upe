@@ -1,9 +1,16 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Smartphone, BellRing, Radio, Link2, ArrowRight } from 'lucide-react';
+import { trackLead, trackLeadServer } from '../utils/metaPixel';
 
 const WHATSAPP_URL =
   'https://wa.me/5575992776610?text=Olá,%20quero%20solicitar%20acesso%20ao%20Gradly%20para%20minha%20turma!';
+
+function handleSolicitarAcesso() {
+  trackLead();
+  const url = typeof window !== 'undefined' ? window.location.href : '';
+  trackLeadServer(url);
+}
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -82,6 +89,7 @@ export function LandingPage() {
               href={WHATSAPP_URL}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={handleSolicitarAcesso}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
@@ -173,6 +181,7 @@ export function LandingPage() {
               href={WHATSAPP_URL}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={handleSolicitarAcesso}
               className="inline-flex items-center gap-2 rounded-2xl bg-indigo-500 px-8 py-4 text-base font-semibold text-white shadow-xl shadow-indigo-500/25 hover:bg-indigo-600 hover:shadow-indigo-500/30 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-slate-950"
             >
               Solicitar Acesso

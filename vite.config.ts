@@ -40,7 +40,7 @@ export default defineConfig({
   plugins: [
     react(),
     {
-      name: 'html-inject-site-url',
+      name: 'html-inject-env',
       transformIndexHtml(html) {
         return html.replace(/\{\{SITE_URL\}\}/g, SITE_URL)
       },

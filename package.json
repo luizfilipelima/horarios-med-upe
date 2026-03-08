@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "supabase:deploy-functions": "supabase functions deploy aprovar-solicitacao --no-verify-jwt && supabase functions deploy rejeitar-solicitacao --no-verify-jwt && supabase functions deploy listar-solicitacoes-pendentes --no-verify-jwt",
+    "supabase:deploy-functions": "supabase functions deploy aprovar-solicitacao --no-verify-jwt && supabase functions deploy rejeitar-solicitacao --no-verify-jwt && supabase functions deploy listar-solicitacoes-pendentes --no-verify-jwt && supabase functions deploy send-email --no-verify-jwt && supabase functions deploy meta-conversions --no-verify-jwt",
     "dev": "vite",
     "generate:og-image": "node scripts/generate-og-image.mjs",
     "generate:pwa-icons": "node scripts/generate-pwa-icons.mjs",
